@@ -10,31 +10,35 @@ $from = (!empty($_GET['from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['fro
 $to   = (!empty($_GET['to'])   && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['to']))   ? $_GET['to']   : date('Y-m-d');
 
 $bind   = [$from, $to];
-$where  = 'WHERE t.trans_date BETWEEN ? AND ?';
+
+// الإجماليات والرسوم في الإحصائيات تخص العمليات العامة (غير الموسومة بتاق) فقط،
+// لأن التاق مخصّص لمتابعة مبالغه المرتبطة على حِدة لا لاحتساب الرصيد العام.
+// (لوحة التحكم وكشف الحساب تبقى تعرض الرصيد الكلي الشامل)
+$where  = 'WHERE t.trans_date BETWEEN ? AND ? AND t.tag_id IS NULL';
 $totals = tx_totals($where, $bind);
 
-// أكثر التصنيفات صرفاً
+// أكثر التصنيفات صرفاً (عمليات عامة غير موسومة)
 $topCategories = q("SELECT c.name, SUM(t.amount) AS total
                     FROM transactions t JOIN categories c ON c.id = t.category_id
-                    WHERE t.type = 'expense' AND t.trans_date BETWEEN ? AND ?
+                    WHERE t.type = 'expense' AND t.tag_id IS NULL AND t.trans_date BETWEEN ? AND ?
                     GROUP BY t.category_id, c.name
                     ORDER BY total DESC LIMIT 10", $bind)->fetchAll();
 
-// أكثر البنود صرفاً
+// أكثر البنود صرفاً (عمليات عامة غير موسومة)
 $topItems = q("SELECT i.name, c.name AS category_name, SUM(t.amount) AS total
                FROM transactions t
                JOIN items i ON i.id = t.item_id
                JOIN categories c ON c.id = t.category_id
-               WHERE t.type = 'expense' AND t.trans_date BETWEEN ? AND ?
+               WHERE t.type = 'expense' AND t.tag_id IS NULL AND t.trans_date BETWEEN ? AND ?
                GROUP BY t.item_id, i.name, c.name
                ORDER BY total DESC LIMIT 10", $bind)->fetchAll();
 
-// الإيرادات والمصروفات شهرياً
+// الإيرادات والمصروفات شهرياً (عمليات عامة غير موسومة)
 $monthly = q("SELECT DATE_FORMAT(t.trans_date, '%Y-%m') AS month,
                      SUM(CASE WHEN t.type = 'income'  THEN t.amount ELSE 0 END) AS income,
                      SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense
               FROM transactions t
-              WHERE t.trans_date BETWEEN ? AND ?
+              WHERE t.trans_date BETWEEN ? AND ? AND t.tag_id IS NULL
               GROUP BY month ORDER BY month", $bind)->fetchAll();
 
 // المبالغ المرتبطة بكل تاق (إيرادات ومصروفات وعدد عمليات)
@@ -78,12 +82,12 @@ require BASE_PATH . '/includes/layout/header.php';
 </div>
 
 <!-- الإجماليات -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-2">
     <div class="col-12 col-md-4">
         <div class="stat-card">
             <div class="stat-icon income"><i class="bi bi-arrow-down-circle"></i></div>
             <div>
-                <div class="stat-label">إجمالي الإيرادات</div>
+                <div class="stat-label">إجمالي الإيرادات (العامة)</div>
                 <div class="stat-value"><?= format_amount($totals['income']) ?></div>
             </div>
         </div>
@@ -92,7 +96,7 @@ require BASE_PATH . '/includes/layout/header.php';
         <div class="stat-card">
             <div class="stat-icon expense"><i class="bi bi-arrow-up-circle"></i></div>
             <div>
-                <div class="stat-label">إجمالي المصروفات</div>
+                <div class="stat-label">إجمالي المصروفات (العامة)</div>
                 <div class="stat-value"><?= format_amount($totals['expense']) ?></div>
             </div>
         </div>
@@ -101,7 +105,7 @@ require BASE_PATH . '/includes/layout/header.php';
         <div class="stat-card">
             <div class="stat-icon balance"><i class="bi bi-wallet2"></i></div>
             <div>
-                <div class="stat-label">الرصيد</div>
+                <div class="stat-label">الرصيد (العام)</div>
                 <div class="stat-value <?= $totals['balance'] >= 0 ? 'positive' : 'negative' ?>">
                     <?= format_amount($totals['balance']) ?>
                 </div>
@@ -109,6 +113,11 @@ require BASE_PATH . '/includes/layout/header.php';
         </div>
     </div>
 </div>
+<p class="text-muted small mb-4">
+    <i class="bi bi-info-circle"></i>
+    الإجماليات والرسوم أدناه تخص <strong>العمليات العامة غير الموسومة بتاق</strong>.
+    مبالغ العمليات المرتبطة بالتاقات معروضة على حِدة في جدول «المبالغ المرتبطة بكل تاق» أسفل الصفحة.
+</p>
 
 <!-- الرسوم البيانية -->
 <div class="row g-4 mb-4">
