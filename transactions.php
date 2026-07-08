@@ -107,6 +107,11 @@ require BASE_PATH . '/includes/layout/header.php';
             <div class="col-12 d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> تطبيق الفلترة</button>
                 <a href="<?= APP_URL ?>transactions.php" class="btn btn-sm btn-outline-secondary">إعادة تعيين</a>
+                <?php if (is_admin()): ?>
+                    <a href="<?= APP_URL ?>quick_edit.php?<?= $exportParams ?>" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil-square"></i> تحرير سريع
+                    </a>
+                <?php endif; ?>
                 <div class="btn-group ms-auto">
                     <a href="<?= APP_URL ?>export.php?format=xlsx&<?= $exportParams ?>" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-file-earmark-excel"></i> تصدير Excel
