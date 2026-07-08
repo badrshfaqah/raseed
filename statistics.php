@@ -188,11 +188,11 @@ require BASE_PATH . '/includes/layout/header.php';
     </div>
 </div>
 
-<!-- المبالغ المرتبطة بكل تاق -->
+<!-- حسابات التاقات: المتبقّي لكل شخص/جهة -->
 <div class="row g-4 mt-1">
     <div class="col-12">
         <div class="card">
-            <div class="card-header"><i class="bi bi-tag"></i> المبالغ المرتبطة بكل تاق</div>
+            <div class="card-header"><i class="bi bi-tag"></i> حسابات التاقات — المتبقّي لكل شخص/جهة</div>
             <div class="card-body p-0">
                 <?php if (!$byTag): ?>
                     <div class="text-center text-muted py-4">لا توجد عمليات موسومة بتاق في هذه الفترة</div>
@@ -201,17 +201,27 @@ require BASE_PATH . '/includes/layout/header.php';
                         <thead>
                             <tr>
                                 <th>التاق</th>
-                                <th class="text-start">الإيرادات المرتبطة</th>
-                                <th class="text-start">المصروفات المرتبطة</th>
+                                <th class="text-start">الوارد له</th>
+                                <th class="text-start">المصروف نيابةً عنه</th>
+                                <th class="text-start">المتبقّي</th>
                                 <th class="text-start">عدد العمليات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($byTag as $r): ?>
+                            <?php foreach ($byTag as $r): $remaining = (float)$r['income'] - (float)$r['expense']; ?>
                                 <tr>
                                     <td><span class="badge text-bg-light border"><?= e($r['name']) ?></span></td>
                                     <td class="text-start amount-income"><?= format_amount($r['income']) ?></td>
                                     <td class="text-start amount-expense"><?= format_amount($r['expense']) ?></td>
+                                    <td class="text-start">
+                                        <?php if (abs($remaining) < 0.005): ?>
+                                            <span class="badge text-bg-secondary">مسدّد</span>
+                                        <?php elseif ($remaining > 0): ?>
+                                            <span class="amount-income">له <?= format_amount($remaining) ?></span>
+                                        <?php else: ?>
+                                            <span class="amount-expense">عليه <?= format_amount(abs($remaining)) ?></span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="text-start"><?= number_format((float)($r['tx_count'] ?? 0)) ?></td>
                                 </tr>
                             <?php endforeach; ?>

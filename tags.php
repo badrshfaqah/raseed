@@ -2,8 +2,9 @@
 /**
  * رصيد - إدارة التاقات (مدير النظام فقط)
  *
- * التاق وسم إضافي اختياري على العملية (مثل مشروع أو جهة أو نشاط)،
- * وتعرض هذه الصفحة لكل تاق إجمالي المبالغ المرتبطة به من إيرادات ومصروفات.
+ * التاق يمثّل شخصاً أو جهة تتعامل معها بالنيابة: المبالغ الواردة له
+ * (إيرادات بتاقه) مقابل ما يُصرف نيابةً عنه (مصروفات بتاقه)، وتعرض هذه
+ * الصفحة لكل تاق المتبقّي له أو عليه. حساب التاق منفصل عن الرصيد العام.
  */
 require __DIR__ . '/includes/init.php';
 require_admin();
@@ -77,7 +78,8 @@ require BASE_PATH . '/includes/layout/header.php';
                     <button type="submit" class="btn btn-primary w-100">إضافة</button>
                 </form>
                 <p class="text-muted small mt-3 mb-0">
-                    التاق وسم إضافي اختياري على العملية بجانب التصنيف والبند، يتيح تتبّع إيرادات ومصروفات نشاط أو مشروع معيّن.
+                    استخدم التاق لكل شخص أو جهة تتعامل معها بالنيابة: المبالغ <strong>الواردة له</strong> (تُسجَّل إيراداً بتاقه)
+                    مقابل ما تدفعه <strong>نيابةً عنه</strong> (يُسجَّل مصروفاً بتاقه)، فيظهر لك <strong>المتبقّي له أو عليه</strong> تلقائياً.
                 </p>
             </div>
         </div>
@@ -97,22 +99,34 @@ require BASE_PATH . '/includes/layout/header.php';
                         <table class="table table-hover table-mobile align-middle">
                             <thead>
                                 <tr>
-                                    <th>التاق</th>
-                                    <th>الإيرادات المرتبطة</th>
-                                    <th>المصروفات المرتبطة</th>
+                                    <th>التاق (الشخص/الجهة)</th>
+                                    <th>الوارد له</th>
+                                    <th>المصروف نيابةً عنه</th>
+                                    <th>المتبقّي</th>
                                     <th>العمليات</th>
                                     <th>الحالة</th>
                                     <th class="text-center">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($tags as $t): ?>
+                                <?php foreach ($tags as $t):
+                                    $remaining = (float)$t['income'] - (float)$t['expense'];
+                                ?>
                                     <tr>
                                         <td data-label="التاق" class="fw-bold">
                                             <a href="<?= APP_URL ?>transactions.php?tag_id=<?= $t['id'] ?>"><?= e($t['name']) ?></a>
                                         </td>
-                                        <td data-label="الإيرادات المرتبطة" class="amount-income"><?= format_amount($t['income']) ?></td>
-                                        <td data-label="المصروفات المرتبطة" class="amount-expense"><?= format_amount($t['expense']) ?></td>
+                                        <td data-label="الوارد له" class="amount-income"><?= format_amount($t['income']) ?></td>
+                                        <td data-label="المصروف نيابةً عنه" class="amount-expense"><?= format_amount($t['expense']) ?></td>
+                                        <td data-label="المتبقّي">
+                                            <?php if (abs($remaining) < 0.005): ?>
+                                                <span class="badge text-bg-secondary">مسدّد</span>
+                                            <?php elseif ($remaining > 0): ?>
+                                                <span class="amount-income">له <?= format_amount($remaining) ?></span>
+                                            <?php else: ?>
+                                                <span class="amount-expense">عليه <?= format_amount(abs($remaining)) ?></span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td data-label="العمليات"><?= number_format((float)$t['tx_count']) ?></td>
                                         <td data-label="الحالة">
                                             <span class="badge text-bg-<?= $t['status'] ? 'success' : 'secondary' ?>">
