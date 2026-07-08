@@ -1,5 +1,9 @@
 <?php defined('RASEED') || exit; ?>
         </div><!-- /.page-body -->
+
+        <footer class="app-footer">
+            تطوير <a href="https://almgrat.com" target="_blank" rel="noopener">برمجة المجرات</a>
+        </footer>
     </main>
 </div><!-- /.layout -->
 

@@ -4,6 +4,32 @@
  */
 defined('RASEED') || exit;
 
+/**
+ * ترويسات أمنية تُرسل مع كل صفحة:
+ * منع التضمين داخل إطارات، منع تخمين نوع المحتوى،
+ * وسياسة أمان محتوى (CSP) تحصر المصادر في النظام و CDN المكتبات فقط.
+ */
+function send_security_headers(): void
+{
+    if (headers_sent()) {
+        return;
+    }
+    header('X-Frame-Options: DENY');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+    header("Content-Security-Policy: "
+        . "default-src 'self'; "
+        . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        . "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        . "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
+        . "img-src 'self' data:; "
+        . "connect-src 'self'; "
+        . "frame-ancestors 'none'; "
+        . "base-uri 'self'; "
+        . "form-action 'self'");
+}
+
 /** تهريب HTML */
 function e(?string $s): string
 {

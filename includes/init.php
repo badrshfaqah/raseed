@@ -28,6 +28,7 @@ if (!defined('RASEED_INSTALLED') || RASEED_INSTALLED !== true) {
 }
 
 // إعدادات الجلسة الآمنة
+ini_set('session.use_strict_mode', '1');
 session_name('raseed_session');
 session_set_cookie_params([
     'lifetime' => 0,
@@ -41,6 +42,29 @@ session_start();
 require BASE_PATH . '/includes/db.php';
 require BASE_PATH . '/includes/functions.php';
 require BASE_PATH . '/includes/auth.php';
+
+send_security_headers();
+
+// تحصين الجلسة: ربطها ببصمة المتصفح لمنع سرقة معرف الجلسة
+$fingerprint = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+if (isset($_SESSION['fingerprint']) && !hash_equals($_SESSION['fingerprint'], $fingerprint)) {
+    session_unset();
+    session_regenerate_id(true);
+}
+$_SESSION['fingerprint'] = $fingerprint;
+
+// إنهاء الجلسة تلقائياً بعد 30 دقيقة من الخمول
+if (!empty($_SESSION['user_id'])) {
+    if (time() - ($_SESSION['last_activity'] ?? time()) > 1800) {
+        session_unset();
+        session_regenerate_id(true);
+    } elseif (time() - ($_SESSION['regenerated_at'] ?? 0) > 1800) {
+        // تجديد معرف الجلسة دورياً أثناء الاستخدام الطويل
+        session_regenerate_id(true);
+        $_SESSION['regenerated_at'] = time();
+    }
+}
+$_SESSION['last_activity'] = time();
 
 // تسجيل الأخطاء في ملف Log بدل عرضها
 ini_set('display_errors', '0');

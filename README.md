@@ -53,6 +53,12 @@ raseed/
 ## ملاحظات تقنية
 
 - **بدون أي مكتبات خارجية على السيرفر**: مزامنة Google Sheets تتم عبر عميل خفيف مدمج (توقيع JWT بـ OpenSSL + cURL)، وتصدير Excel عبر كاتب XLSX أصلي مدمج (ZipArchive) بدل PhpSpreadsheet — للحفاظ على صغر حجم النظام وسرعته وسهولة تركيبه بدون Composer. مكتبات الواجهة (Bootstrap 5 RTL, Chart.js, Bootstrap Icons, خط Tajawal) تُحمَّل من CDN.
-- جميع الاستعلامات عبر PDO Prepared Statements، وجميع النماذج محمية بـ CSRF Token، وكلمات المرور بـ `password_hash`.
+- **الحماية**:
+  - جميع الاستعلامات عبر PDO Prepared Statements (لا حقن SQL)، وجميع المخرجات مهرّبة (لا XSS)، وجميع النماذج محمية بـ CSRF Token.
+  - كلمات المرور مشفرة بـ `password_hash` (bcrypt)، مع مقارنة ثابتة التوقيت تمنع كشف أسماء المستخدمين.
+  - **قفل محاولات الدخول**: بعد 5 محاولات فاشلة خلال 15 دقيقة (لنفس المستخدم أو نفس الـ IP) يُوقف الدخول مؤقتاً، مع إبطاء كل محاولة فاشلة.
+  - **تحصين الجلسات**: ربط الجلسة ببصمة المتصفح، إنهاء تلقائي بعد 30 دقيقة خمول، تجديد دوري لمعرف الجلسة، و`use_strict_mode`.
+  - **ترويسات أمنية** على كل صفحة: `Content-Security-Policy` (تحصر المصادر في النظام و CDN المكتبات)، `X-Frame-Options: DENY`، `X-Content-Type-Options: nosniff`، `Referrer-Policy`.
+  - `config.php` و `includes/` و `logs/` محمية بـ `.htaccess` (مع `index.html` احتياطي للاستضافات غير Apache).
 - عمليات الحفظ تتم داخل Transactions لضمان سلامة البيانات، والأخطاء تُسجَّل في `logs/error.log`.
 - الجداول: `users`, `categories`, `items`, `transactions`, `google_sheet_sync_logs`, `settings`.

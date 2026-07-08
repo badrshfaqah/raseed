@@ -26,6 +26,11 @@ if (is_file($configFile)) {
 
 require __DIR__ . '/schema.php';
 
+// ترويسات أمنية (المثبّت لا يمر عبر init.php)
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+
 session_name('raseed_install');
 session_start();
 
@@ -439,6 +444,10 @@ function old(string $key, string $default = ''): string
                 </div>
             <?php endif; ?>
         <?php endif; ?>
+
+        <div class="auth-footer">
+            تطوير <a href="https://almgrat.com" target="_blank" rel="noopener">برمجة المجرات</a>
+        </div>
     </div>
 </div>
 

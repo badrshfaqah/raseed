@@ -8,7 +8,7 @@
 require __DIR__ . '/includes/init.php';
 require_admin();
 
-$tables = ['users', 'categories', 'items', 'transactions', 'google_sheet_sync_logs', 'settings'];
+$tables = ['users', 'categories', 'items', 'transactions', 'google_sheet_sync_logs', 'login_attempts', 'settings'];
 
 /* ---------------- تنزيل نسخة احتياطية ---------------- */
 
@@ -145,6 +145,7 @@ $tableLabels = [
     'items' => 'البنود',
     'transactions' => 'العمليات',
     'google_sheet_sync_logs' => 'سجل المزامنة',
+    'login_attempts' => 'محاولات الدخول',
     'settings' => 'الإعدادات',
 ];
 

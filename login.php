@@ -10,30 +10,55 @@ if (current_user()) {
 
 $error = '';
 
+// حماية من هجمات التخمين: قفل مؤقت بعد 5 محاولات فاشلة خلال 15 دقيقة
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MIN   = 15;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     $username = trim($_POST['username'] ?? '');
     $password = (string)($_POST['password'] ?? '');
+    $ip       = substr($_SERVER['REMOTE_ADDR'] ?? 'unknown', 0, 45);
 
     if ($username === '' || $password === '') {
         $error = 'يرجى إدخال اسم المستخدم وكلمة المرور.';
     } else {
-        $user = q('SELECT * FROM users WHERE username = ?', [$username])->fetch();
+        // تنظيف السجلات القديمة ثم فحص القفل المؤقت
+        q('DELETE FROM login_attempts WHERE attempted_at < (NOW() - INTERVAL 1 DAY)');
+        $failures = (int)q(
+            'SELECT COUNT(*) FROM login_attempts
+             WHERE success = 0 AND attempted_at > (NOW() - INTERVAL ' . LOGIN_WINDOW_MIN . ' MINUTE)
+               AND (username = ? OR ip = ?)',
+            [$username, $ip]
+        )->fetchColumn();
 
-        if ($user && password_verify($password, $user['password_hash'])) {
-            if ((int)$user['status'] !== 1) {
-                $error = 'هذا الحساب موقوف، يرجى مراجعة مدير النظام.';
-            } else {
-                session_regenerate_id(true);
-                $_SESSION['user_id'] = (int)$user['id'];
-                q('UPDATE users SET last_login = NOW() WHERE id = ?', [$user['id']]);
-                redirect(APP_URL . 'dashboard.php');
-            }
+        if ($failures >= LOGIN_MAX_ATTEMPTS) {
+            $error = 'تم إيقاف محاولات الدخول مؤقتاً بسبب تكرار المحاولات الفاشلة. حاول مجدداً بعد ' . LOGIN_WINDOW_MIN . ' دقيقة.';
         } else {
-            // إبطاء محاولات التخمين
-            sleep(1);
-            $error = 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+            $user = q('SELECT * FROM users WHERE username = ?', [$username])->fetch();
+
+            // مقارنة بوقت ثابت حتى عند عدم وجود المستخدم (منع كشف أسماء المستخدمين عبر فارق التوقيت)
+            $dummyHash = '$2y$12$Ujo9IDMUHMixc0snyhULMeR/iUbTYSAUh..wAowFvdseFdlOAcMHa';
+            $validPassword = password_verify($password, $user['password_hash'] ?? $dummyHash) && $user;
+
+            if ($validPassword) {
+                if ((int)$user['status'] !== 1) {
+                    $error = 'هذا الحساب موقوف، يرجى مراجعة مدير النظام.';
+                } else {
+                    q('INSERT INTO login_attempts (username, ip, success) VALUES (?, ?, 1)', [$username, $ip]);
+                    q('DELETE FROM login_attempts WHERE username = ? AND success = 0', [$username]);
+                    session_regenerate_id(true);
+                    $_SESSION['user_id']        = (int)$user['id'];
+                    $_SESSION['regenerated_at'] = time();
+                    q('UPDATE users SET last_login = NOW() WHERE id = ?', [$user['id']]);
+                    redirect(APP_URL . 'dashboard.php');
+                }
+            } else {
+                q('INSERT INTO login_attempts (username, ip, success) VALUES (?, ?, 0)', [$username, $ip]);
+                sleep(1); // إبطاء إضافي لكل محاولة فاشلة
+                $error = 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+            }
         }
     }
 }
@@ -79,6 +104,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="bi bi-box-arrow-in-left"></i> تسجيل الدخول
             </button>
         </form>
+
+        <div class="auth-footer">
+            تطوير <a href="https://almgrat.com" target="_blank" rel="noopener">برمجة المجرات</a>
+        </div>
     </div>
 </div>
 </body>

@@ -81,6 +81,17 @@ function raseed_schema(): array
             KEY idx_sync_status (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
+        "CREATE TABLE IF NOT EXISTS login_attempts (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            username VARCHAR(50) NOT NULL,
+            ip VARCHAR(45) NOT NULL,
+            success TINYINT(1) NOT NULL DEFAULT 0,
+            attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_attempts_user (username, attempted_at),
+            KEY idx_attempts_ip (ip, attempted_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
         "CREATE TABLE IF NOT EXISTS settings (
             setting_key VARCHAR(100) NOT NULL,
             setting_value TEXT DEFAULT NULL,

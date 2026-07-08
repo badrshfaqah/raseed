@@ -228,6 +228,31 @@ body {
     font-size: .93rem;
 }
 
+/* ---------------- التذييل ---------------- */
+
+.app-footer {
+    margin-top: auto;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    font-size: .82rem;
+    color: #8a92a6;
+}
+.app-footer a,
+.auth-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+.app-footer a:hover,
+.auth-footer a:hover { text-decoration: underline; }
+
+.auth-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: .8rem;
+    color: #8a92a6;
+}
+
 /* ---------------- الأزرار ---------------- */
 
 .btn-primary {
