@@ -14,12 +14,12 @@ $format = ($_GET['format'] ?? 'xlsx') === 'csv' ? 'csv' : 'xlsx';
 [$whereSql, $bind] = build_tx_filters($_GET);
 
 $rows = q('SELECT t.id, t.trans_date, t.type, c.name AS category_name, i.name AS item_name,
-                  t.amount, t.notes, u.name AS user_name, t.created_at
+                  tg.name AS tag_name, t.amount, t.notes, u.name AS user_name, t.created_at
            ' . tx_base_query() . "
            $whereSql
            ORDER BY t.trans_date DESC, t.id DESC", $bind)->fetchAll();
 
-$headers = ['#', 'التاريخ', 'النوع', 'التصنيف', 'البند', 'المبلغ', 'الملاحظات', 'المستخدم', 'وقت التسجيل'];
+$headers = ['#', 'التاريخ', 'النوع', 'التصنيف', 'البند', 'التاق', 'المبلغ', 'الملاحظات', 'المستخدم', 'وقت التسجيل'];
 
 $data = [];
 foreach ($rows as $r) {
@@ -29,6 +29,7 @@ foreach ($rows as $r) {
         type_label($r['type']),
         $r['category_name'],
         $r['item_name'],
+        (string)$r['tag_name'],
         (float)$r['amount'],
         (string)$r['notes'],
         $r['user_name'],
@@ -38,9 +39,9 @@ foreach ($rows as $r) {
 
 // صف الإجماليات في نهاية الملف
 $totals = tx_totals($whereSql, $bind);
-$data[] = ['', '', '', '', 'إجمالي الإيرادات', $totals['income'], '', '', ''];
-$data[] = ['', '', '', '', 'إجمالي المصروفات', $totals['expense'], '', '', ''];
-$data[] = ['', '', '', '', 'الرصيد', $totals['balance'], '', '', ''];
+$data[] = ['', '', '', '', '', 'إجمالي الإيرادات', $totals['income'], '', '', ''];
+$data[] = ['', '', '', '', '', 'إجمالي المصروفات', $totals['expense'], '', '', ''];
+$data[] = ['', '', '', '', '', 'الرصيد', $totals['balance'], '', '', ''];
 
 $typeSuffix = match ($_GET['type'] ?? '') {
     'income'  => '-الإيرادات',

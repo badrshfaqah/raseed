@@ -37,11 +37,24 @@ $monthly = q("SELECT DATE_FORMAT(t.trans_date, '%Y-%m') AS month,
               WHERE t.trans_date BETWEEN ? AND ?
               GROUP BY month ORDER BY month", $bind)->fetchAll();
 
+// الإيرادات والمصروفات حسب التاق
+$byTag = q("SELECT tg.name,
+                   COALESCE(SUM(CASE WHEN t.type = 'income'  THEN t.amount END), 0) AS income,
+                   COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount END), 0) AS expense
+            FROM transactions t
+            JOIN tags tg ON tg.id = t.tag_id
+            WHERE t.trans_date BETWEEN ? AND ?
+            GROUP BY t.tag_id, tg.name
+            ORDER BY SUM(t.amount) DESC LIMIT 15", $bind)->fetchAll();
+
 $chartMonths  = array_column($monthly, 'month');
 $chartIncome  = array_map('floatval', array_column($monthly, 'income'));
 $chartExpense = array_map('floatval', array_column($monthly, 'expense'));
 $pieLabels    = array_column($topCategories, 'name');
 $pieValues    = array_map('floatval', array_column($topCategories, 'total'));
+$tagLabels    = array_column($byTag, 'name');
+$tagIncome    = array_map('floatval', array_column($byTag, 'income'));
+$tagExpense   = array_map('floatval', array_column($byTag, 'expense'));
 
 $pageTitle = 'الإحصائيات';
 require BASE_PATH . '/includes/layout/header.php';
@@ -168,13 +181,65 @@ require BASE_PATH . '/includes/layout/header.php';
     </div>
 </div>
 
+<!-- الإيرادات والمصروفات حسب التاق -->
+<div class="row g-4 mt-1">
+    <div class="col-12 col-lg-7">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-tag"></i> الإيرادات والمصروفات حسب التاق</div>
+            <div class="card-body p-0">
+                <?php if (!$byTag): ?>
+                    <div class="text-center text-muted py-4">لا توجد عمليات موسومة بتاق في هذه الفترة</div>
+                <?php else: ?>
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>التاق</th>
+                                <th class="text-start">الإيرادات</th>
+                                <th class="text-start">المصروفات</th>
+                                <th class="text-start">الرصيد</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($byTag as $r): $bal = (float)$r['income'] - (float)$r['expense']; ?>
+                                <tr>
+                                    <td><span class="badge text-bg-light border"><?= e($r['name']) ?></span></td>
+                                    <td class="text-start amount-income"><?= format_amount($r['income']) ?></td>
+                                    <td class="text-start amount-expense"><?= format_amount($r['expense']) ?></td>
+                                    <td class="text-start <?= $bal >= 0 ? 'amount-income' : 'amount-expense' ?>">
+                                        <?= format_amount($bal) ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-5">
+        <div class="card h-100">
+            <div class="card-header">مقارنة التاقات</div>
+            <div class="card-body">
+                <?php if (!$byTag): ?>
+                    <div class="text-center text-muted py-4">لا توجد بيانات</div>
+                <?php else: ?>
+                    <canvas id="tagChart" height="260"></canvas>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
 $chartData = json_encode([
-    'months'    => $chartMonths,
-    'income'    => $chartIncome,
-    'expense'   => $chartExpense,
-    'pieLabels' => $pieLabels,
-    'pieValues' => $pieValues,
+    'months'     => $chartMonths,
+    'income'     => $chartIncome,
+    'expense'    => $chartExpense,
+    'pieLabels'  => $pieLabels,
+    'pieValues'  => $pieValues,
+    'tagLabels'  => $tagLabels,
+    'tagIncome'  => $tagIncome,
+    'tagExpense' => $tagExpense,
 ], JSON_UNESCAPED_UNICODE);
 
 $nonce = csp_nonce();
@@ -214,6 +279,26 @@ new Chart(document.getElementById('pieChart'), {
         plugins: { legend: { position: 'bottom', rtl: true } }
     }
 });
+
+const tagCanvas = document.getElementById('tagChart');
+if (tagCanvas) {
+    new Chart(tagCanvas, {
+        type: 'bar',
+        data: {
+            labels: data.tagLabels,
+            datasets: [
+                { label: 'الإيرادات', data: data.tagIncome, backgroundColor: '#198754', borderRadius: 4 },
+                { label: 'المصروفات', data: data.tagExpense, backgroundColor: '#dc3545', borderRadius: 4 }
+            ]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            scales: { x: { beginAtZero: true } },
+            plugins: { legend: { position: 'bottom', rtl: true } }
+        }
+    });
+}
 </script>
 HTML;
 require BASE_PATH . '/includes/layout/footer.php';

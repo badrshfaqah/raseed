@@ -10,7 +10,7 @@
 defined('RASEED') || defined('RASEED_INSTALLER') || exit;
 
 /** إصدار بنية قاعدة البيانات المطلوب لهذا الكود */
-const RASEED_DB_VERSION = 1;
+const RASEED_DB_VERSION = 2;
 
 /**
  * سجل الترقيات: المفتاح = رقم الإصدار، القيمة = مصفوفة جمل SQL
@@ -30,7 +30,21 @@ const RASEED_DB_VERSION = 1;
 function raseed_migrations(): array
 {
     return [
-        // 2 => [ "ALTER TABLE ..." ],
+        // الإصدار 2: ميزة التاق (وسم إضافي للعمليات لتتبّع إيراداتها ومصروفاتها)
+        2 => [
+            "CREATE TABLE IF NOT EXISTS tags (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                name VARCHAR(100) NOT NULL,
+                status TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_tag_name (name)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "ALTER TABLE transactions
+                ADD COLUMN tag_id INT UNSIGNED DEFAULT NULL AFTER item_id,
+                ADD KEY idx_tx_tag (tag_id),
+                ADD CONSTRAINT fk_tx_tag FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE SET NULL",
+        ],
     ];
 }
 

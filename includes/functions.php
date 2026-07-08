@@ -191,7 +191,7 @@ function json_response(array $data, int $code = 200): never
 
 /**
  * يبني شرط WHERE وقيم الربط من فلاتر الطلب.
- * الفلاتر المدعومة: from, to, type, category_id, item_id, search
+ * الفلاتر المدعومة: from, to, type, category_id, item_id, tag_id, search
  */
 function build_tx_filters(array $in): array
 {
@@ -218,22 +218,27 @@ function build_tx_filters(array $in): array
         $where[] = 't.item_id = ?';
         $bind[]  = (int)$in['item_id'];
     }
+    if (!empty($in['tag_id']) && ctype_digit((string)$in['tag_id'])) {
+        $where[] = 't.tag_id = ?';
+        $bind[]  = (int)$in['tag_id'];
+    }
     if (!empty($in['search'])) {
-        $where[] = '(t.notes LIKE ? OR i.name LIKE ? OR c.name LIKE ?)';
+        $where[] = '(t.notes LIKE ? OR i.name LIKE ? OR c.name LIKE ? OR tg.name LIKE ?)';
         $like    = '%' . $in['search'] . '%';
-        array_push($bind, $like, $like, $like);
+        array_push($bind, $like, $like, $like, $like);
     }
 
     return [$where ? 'WHERE ' . implode(' AND ', $where) : '', $bind];
 }
 
-/** جملة SELECT الأساسية لكشف الحساب */
+/** جملة SELECT الأساسية لكشف الحساب (التاق اختياري عبر LEFT JOIN) */
 function tx_base_query(): string
 {
     return 'FROM transactions t
             JOIN categories c ON c.id = t.category_id
             JOIN items i      ON i.id = t.item_id
-            JOIN users u      ON u.id = t.user_id';
+            JOIN users u      ON u.id = t.user_id
+            LEFT JOIN tags tg ON tg.id = t.tag_id';
 }
 
 /** إجماليات (إيرادات، مصروفات، رصيد) وفق الفلاتر */

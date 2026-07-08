@@ -86,3 +86,20 @@ set_exception_handler(function (Throwable $e) {
 // تحميل إعدادات النظام وضبط المنطقة الزمنية
 load_settings();
 date_default_timezone_set(setting('timezone', 'Asia/Riyadh'));
+
+// بوابة الترقية: إذا كانت بنية القاعدة أقدم من الكود (بعد رفع نسخة جديدة)،
+// نمنع تشغيل بقية الصفحات ببنية ناقصة. المدير يُوجَّه لصفحة الترقية،
+// وغير المدير يرى رسالة صيانة. لا يُطبَّق على صفحة الترقية وتسجيل الخروج.
+if (needs_upgrade() && current_user()) {
+    $currentScript = basename($_SERVER['SCRIPT_NAME'] ?? '');
+    if (!in_array($currentScript, ['upgrade.php', 'logout.php'], true)) {
+        if (is_admin()) {
+            redirect(APP_URL . 'upgrade.php');
+        }
+        http_response_code(503);
+        echo '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8">'
+            . '<body style="font-family:sans-serif;text-align:center;padding:60px">'
+            . '<h3>النظام تحت التحديث</h3><p>يرجى المحاولة بعد قليل. إذا استمرت الرسالة، راجع مدير النظام.</p></body></html>';
+        exit;
+    }
+}

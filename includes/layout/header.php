@@ -61,6 +61,7 @@ function nav_link(string $href, string $icon, string $label, string $current): s
                 <?= nav_link('import.php', 'bi-file-earmark-arrow-up', 'استيراد من Excel', $currentPage) ?>
                 <?= nav_link('categories.php', 'bi-tags', 'التصنيفات', $currentPage) ?>
                 <?= nav_link('items.php', 'bi-list-ul', 'البنود', $currentPage) ?>
+                <?= nav_link('tags.php', 'bi-tag', 'التاقات', $currentPage) ?>
                 <?= nav_link('users.php', 'bi-people', 'المستخدمون', $currentPage) ?>
                 <?= nav_link('sync_log.php', 'bi-arrow-repeat', 'سجل المزامنة', $currentPage) ?>
                 <?= nav_link('backup.php', 'bi-database-down', 'النسخ الاحتياطي', $currentPage) ?>

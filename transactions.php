@@ -16,13 +16,14 @@ $pages   = max(1, (int)ceil($count / $perPage));
 $page    = min($page, $pages);
 $offset  = ($page - 1) * $perPage;
 
-$rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS user_name
+$rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, tg.name AS tag_name, u.name AS user_name
            ' . tx_base_query() . "
            $whereSql
            ORDER BY t.trans_date DESC, t.id DESC
            LIMIT $perPage OFFSET $offset", $bind)->fetchAll();
 
 $categories = q('SELECT id, name FROM categories ORDER BY name')->fetchAll();
+$tags       = q('SELECT id, name FROM tags ORDER BY name')->fetchAll();
 
 // بنود التصنيف المختار (للفلتر)
 $filterItems = [];
@@ -37,6 +38,7 @@ $exportParams = http_build_query(array_filter([
     'type'        => $_GET['type'] ?? '',
     'category_id' => $_GET['category_id'] ?? '',
     'item_id'     => $_GET['item_id'] ?? '',
+    'tag_id'      => $_GET['tag_id'] ?? '',
     'search'      => $_GET['search'] ?? '',
 ]));
 
@@ -87,9 +89,20 @@ require BASE_PATH . '/includes/layout/header.php';
                 </select>
             </div>
             <div class="col-6 col-md-2">
+                <label class="form-label small">التاق</label>
+                <select class="form-select form-select-sm" name="tag_id">
+                    <option value="">الكل</option>
+                    <?php foreach ($tags as $tg): ?>
+                        <option value="<?= $tg['id'] ?>" <?= (int)($_GET['tag_id'] ?? 0) === (int)$tg['id'] ? 'selected' : '' ?>>
+                            <?= e($tg['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
                 <label class="form-label small">بحث</label>
                 <input type="text" class="form-control form-control-sm" name="search"
-                       value="<?= e($_GET['search'] ?? '') ?>" placeholder="في الملاحظات والبنود...">
+                       value="<?= e($_GET['search'] ?? '') ?>" placeholder="في الملاحظات والبنود والتاق...">
             </div>
             <div class="col-12 d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> تطبيق الفلترة</button>
@@ -161,6 +174,7 @@ require BASE_PATH . '/includes/layout/header.php';
                             <th>النوع</th>
                             <th>التصنيف</th>
                             <th>البند</th>
+                            <th>التاق</th>
                             <th>المبلغ</th>
                             <th>الملاحظات</th>
                             <th>المستخدم</th>
@@ -177,6 +191,11 @@ require BASE_PATH . '/includes/layout/header.php';
                                 </td>
                                 <td data-label="التصنيف"><?= e($t['category_name']) ?></td>
                                 <td data-label="البند"><?= e($t['item_name']) ?></td>
+                                <td data-label="التاق">
+                                    <?php if ($t['tag_name']): ?>
+                                        <span class="badge text-bg-light border"><?= e($t['tag_name']) ?></span>
+                                    <?php else: ?>-<?php endif; ?>
+                                </td>
                                 <td data-label="المبلغ" class="amount-<?= $t['type'] ?>">
                                     <?= ($t['type'] === 'expense' ? '-' : '+') . ' ' . format_amount($t['amount']) ?>
                                 </td>

@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $transDate  = trim($_POST['trans_date'] ?? '');
     $categoryId = (int)($_POST['category_id'] ?? 0);
     $itemId     = (int)($_POST['item_id'] ?? 0);
+    $tagId      = (int)($_POST['tag_id'] ?? 0);
     $amount     = (float)str_replace(',', '', (string)($_POST['amount'] ?? '0'));
     $notes      = trim($_POST['notes'] ?? '');
 
@@ -46,13 +47,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'البند المختار لا يتبع هذا التصنيف.';
         }
     }
+    // التاق اختياري؛ إن اختير فيجب أن يكون موجوداً ومفعّلاً
+    if (!$errors && $tagId > 0) {
+        if (!q('SELECT id FROM tags WHERE id = ? AND status = 1', [$tagId])->fetch()) {
+            $errors[] = 'التاق المختار غير صالح.';
+        }
+    }
 
     if (!$errors) {
         try {
             db()->beginTransaction();
-            q('INSERT INTO transactions (type, trans_date, category_id, item_id, amount, notes, user_id, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
-              [$type, $transDate, $categoryId, $itemId, $amount, $notes ?: null, current_user()['id']]);
+            q('INSERT INTO transactions (type, trans_date, category_id, item_id, tag_id, amount, notes, user_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+              [$type, $transDate, $categoryId, $itemId, $tagId ?: null, $amount, $notes ?: null, current_user()['id']]);
             $txId = (int)db()->lastInsertId();
             db()->commit();
 
@@ -76,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $categories = q('SELECT id, name FROM categories WHERE status = 1 ORDER BY name')->fetchAll();
+$tags       = q('SELECT id, name FROM tags WHERE status = 1 ORDER BY name')->fetchAll();
 
 $pageTitle = $isIncome ? 'إضافة إيراد' : 'إضافة مصروف';
 require BASE_PATH . '/includes/layout/header.php';
@@ -120,6 +128,18 @@ require BASE_PATH . '/includes/layout/header.php';
                         <select class="form-select" name="item_id" id="itemSelect"
                                 data-selected="<?= (int)($_POST['item_id'] ?? 0) ?>" required>
                             <option value="">-- اختر البند --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">التاق <span class="text-muted small">(اختياري)</span></label>
+                        <select class="form-select" name="tag_id">
+                            <option value="">-- بدون تاق --</option>
+                            <?php foreach ($tags as $tg): ?>
+                                <option value="<?= $tg['id'] ?>" <?= (int)($_POST['tag_id'] ?? 0) === (int)$tg['id'] ? 'selected' : '' ?>>
+                                    <?= e($tg['name']) ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
 

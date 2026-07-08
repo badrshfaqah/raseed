@@ -17,7 +17,7 @@ class GoogleSheets
     private const SCOPE     = 'https://www.googleapis.com/auth/spreadsheets';
 
     /** رؤوس الأعمدة في الشيت */
-    public const HEADERS = ['ID', 'التاريخ', 'النوع', 'التصنيف', 'البند', 'المبلغ', 'الملاحظات', 'المستخدم', 'وقت التسجيل'];
+    public const HEADERS = ['ID', 'التاريخ', 'النوع', 'التصنيف', 'البند', 'التاق', 'المبلغ', 'الملاحظات', 'المستخدم', 'وقت التسجيل'];
 
     /** هل المزامنة مفعّلة (توجد بيانات ربط)؟ */
     public static function enabled(): bool
@@ -71,7 +71,7 @@ class GoogleSheets
 
     private static function txRow(int $id): ?array
     {
-        $t = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS user_name
+        $t = q('SELECT t.*, c.name AS category_name, i.name AS item_name, tg.name AS tag_name, u.name AS user_name
                 ' . tx_base_query() . ' WHERE t.id = ?', [$id])->fetch();
         if (!$t) {
             return null;
@@ -82,6 +82,7 @@ class GoogleSheets
             type_label($t['type']),
             $t['category_name'],
             $t['item_name'],
+            (string)$t['tag_name'],
             (float)$t['amount'],
             (string)$t['notes'],
             $t['user_name'],
@@ -106,7 +107,7 @@ class GoogleSheets
                 ['values' => [$row]], $token);
         } else {
             self::request('POST',
-                self::valuesUrl($sheet . '!A:I') . ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
+                self::valuesUrl($sheet . '!A:J') . ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
                 ['values' => [$row]], $token);
         }
     }

@@ -16,15 +16,15 @@ require BASE_PATH . '/includes/XlsxReader.php';
 require BASE_PATH . '/includes/GoogleSheets.php';
 
 const IMPORT_MAX_ROWS = 5000;
-const IMPORT_COLUMNS  = ['التاريخ', 'النوع', 'التصنيف', 'البند', 'المبلغ', 'الملاحظات'];
+const IMPORT_COLUMNS  = ['التاريخ', 'النوع', 'التصنيف', 'البند', 'المبلغ', 'الملاحظات', 'التاق'];
 
 /* ---------------- تنزيل القالب ---------------- */
 
 if (($_GET['action'] ?? '') === 'template') {
     $example = [
-        ['2026-01-15', 'إيراد', 'إيرادات', 'دفعة مشروع', 5000, 'دفعة أولى'],
-        ['2026-01-16', 'مصروف', 'ضيافة', 'قهوة', 120, 'اجتماع'],
-        ['2026-01-16', 'مصروف', 'نقل', 'وقود', 200, ''],
+        ['2026-01-15', 'إيراد', 'إيرادات', 'دفعة مشروع', 5000, 'دفعة أولى', 'مشروع الرياض'],
+        ['2026-01-16', 'مصروف', 'ضيافة', 'قهوة', 120, 'اجتماع', 'مشروع الرياض'],
+        ['2026-01-16', 'مصروف', 'نقل', 'وقود', 200, '', ''],
     ];
     Xlsx::download('raseed-import-template', IMPORT_COLUMNS, $example);
 }
@@ -64,12 +64,17 @@ function build_preview(array $rows): array
     foreach (q('SELECT i.name AS item, c.name AS cat FROM items i JOIN categories c ON c.id = i.category_id')->fetchAll() as $r) {
         $existingItems[mb_strtolower($r['cat']) . '|' . mb_strtolower($r['item'])] = true;
     }
+    $existingTags = [];
+    foreach (q('SELECT name FROM tags')->fetchAll() as $r) {
+        $existingTags[mb_strtolower($r['name'])] = true;
+    }
 
     $preview  = [];
     $valid    = [];
     $errors   = 0;
     $newCats  = [];
     $newItems = [];
+    $newTags  = [];
     $rowNum   = 0;
 
     foreach ($rows as $raw) {
@@ -87,6 +92,7 @@ function build_preview(array $rows): array
         $itemName = trim($raw[3] ?? '');
         $amountRaw = str_replace([',', ' '], '', trim($raw[4] ?? ''));
         $notes   = trim($raw[5] ?? '');
+        $tagName = trim($raw[6] ?? '');
 
         $rowErrors = [];
         $date = XlsxReader::normalizeDate($dateRaw);
@@ -112,10 +118,13 @@ function build_preview(array $rows): array
         if (mb_strlen($notes) > 1000) {
             $rowErrors[] = 'الملاحظات طويلة جداً';
         }
+        if (mb_strlen($tagName) > 100) {
+            $rowErrors[] = 'اسم التاق طويل جداً';
+        }
 
         $ok = !$rowErrors;
 
-        // رصد التصنيفات والبنود الجديدة (للصفوف الصحيحة فقط)
+        // رصد التصنيفات والبنود والتاقات الجديدة (للصفوف الصحيحة فقط)
         if ($ok) {
             $catKey = mb_strtolower($catName);
             if (!isset($existingCats[$catKey]) && !isset($newCats[$catKey])) {
@@ -125,9 +134,15 @@ function build_preview(array $rows): array
             if (!isset($existingItems[$itemKey]) && !isset($newItems[$itemKey])) {
                 $newItems[$itemKey] = $catName . ' ← ' . $itemName;
             }
+            if ($tagName !== '') {
+                $tagKey = mb_strtolower($tagName);
+                if (!isset($existingTags[$tagKey]) && !isset($newTags[$tagKey])) {
+                    $newTags[$tagKey] = $tagName;
+                }
+            }
             $valid[] = [
                 'date' => $date, 'type' => $type, 'category' => $catName,
-                'item' => $itemName, 'amount' => $amount, 'notes' => $notes,
+                'item' => $itemName, 'amount' => $amount, 'notes' => $notes, 'tag' => $tagName,
             ];
         } else {
             $errors++;
@@ -136,7 +151,7 @@ function build_preview(array $rows): array
         $preview[] = [
             'row' => $rowNum, 'date' => $dateRaw, 'type' => $typeRaw,
             'category' => $catName, 'item' => $itemName, 'amount' => $amountRaw,
-            'notes' => $notes, 'ok' => $ok, 'error' => implode('، ', $rowErrors),
+            'notes' => $notes, 'tag' => $tagName, 'ok' => $ok, 'error' => implode('، ', $rowErrors),
         ];
     }
 
@@ -146,6 +161,7 @@ function build_preview(array $rows): array
         'errors'   => $errors,
         'newCats'  => array_values($newCats),
         'newItems' => array_values($newItems),
+        'newTags'  => array_values($newTags),
     ];
 }
 
@@ -155,19 +171,21 @@ function run_import(array $validRows): array
 {
     $catCache  = [];
     $itemCache = [];
+    $tagCache  = [];
     $insertedIds = [];
 
     db()->beginTransaction();
     try {
         $insertTx = db()->prepare(
-            'INSERT INTO transactions (type, trans_date, category_id, item_id, amount, notes, user_id, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
+            'INSERT INTO transactions (type, trans_date, category_id, item_id, tag_id, amount, notes, user_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
         );
         foreach ($validRows as $r) {
             $catId  = resolve_category($r['category'], $catCache);
             $itemId = resolve_item($catId, $r['item'], $itemCache);
+            $tagId  = !empty($r['tag']) ? resolve_tag($r['tag'], $tagCache) : null;
             $insertTx->execute([
-                $r['type'], $r['date'], $catId, $itemId,
+                $r['type'], $r['date'], $catId, $itemId, $tagId,
                 $r['amount'], $r['notes'] !== '' ? $r['notes'] : null,
                 current_user()['id'],
             ]);
@@ -224,6 +242,21 @@ function resolve_item(int $categoryId, string $name, array &$cache): int
     $id = q('SELECT id FROM items WHERE category_id = ? AND name = ?', [$categoryId, $name])->fetchColumn();
     if (!$id) {
         q('INSERT INTO items (category_id, name) VALUES (?, ?)', [$categoryId, $name]);
+        $id = db()->lastInsertId();
+    }
+    return $cache[$key] = (int) $id;
+}
+
+/** إيجاد تاق بالاسم أو إنشاؤه */
+function resolve_tag(string $name, array &$cache): int
+{
+    $key = mb_strtolower($name);
+    if (isset($cache[$key])) {
+        return $cache[$key];
+    }
+    $id = q('SELECT id FROM tags WHERE name = ?', [$name])->fetchColumn();
+    if (!$id) {
+        q('INSERT INTO tags (name) VALUES (?)', [$name]);
         $id = db()->lastInsertId();
     }
     return $cache[$key] = (int) $id;
@@ -325,6 +358,7 @@ require BASE_PATH . '/includes/layout/header.php';
                         <li><span>البند</span><span class="text-muted">يُنشأ تلقائياً إن كان جديداً</span></li>
                         <li><span>المبلغ</span><span class="text-muted">رقم أكبر من صفر</span></li>
                         <li><span>الملاحظات</span><span class="text-muted">اختياري</span></li>
+                        <li><span>التاق</span><span class="text-muted">اختياري - يُنشأ تلقائياً</span></li>
                     </ul>
                 </div>
             </div>
@@ -336,7 +370,7 @@ require BASE_PATH . '/includes/layout/header.php';
                 <div class="card-body">
                     <div class="alert alert-info py-2 small">
                         <i class="bi bi-info-circle"></i>
-                        التصنيفات والبنود غير الموجودة ستُنشأ تلقائياً أثناء الاستيراد. سترى معاينة كاملة قبل الحفظ النهائي.
+                        التصنيفات والبنود والتاقات غير الموجودة ستُنشأ تلقائياً أثناء الاستيراد. سترى معاينة كاملة قبل الحفظ النهائي.
                     </div>
                     <form method="post" enctype="multipart/form-data">
                         <?= csrf_field() ?>
@@ -359,39 +393,48 @@ require BASE_PATH . '/includes/layout/header.php';
     <?php $validCount = count($data['valid']); ?>
 
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2 col-xl">
             <div class="stat-card">
                 <div class="stat-icon income"><i class="bi bi-check2-circle"></i></div>
                 <div><div class="stat-label">صفوف صحيحة</div><div class="stat-value"><?= $validCount ?></div></div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2 col-xl">
             <div class="stat-card">
                 <div class="stat-icon expense"><i class="bi bi-x-circle"></i></div>
-                <div><div class="stat-label">صفوف بها أخطاء</div><div class="stat-value"><?= (int) $data['errors'] ?></div></div>
+                <div><div class="stat-label">أخطاء</div><div class="stat-value"><?= (int) $data['errors'] ?></div></div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2 col-xl">
             <div class="stat-card">
                 <div class="stat-icon balance"><i class="bi bi-tags"></i></div>
                 <div><div class="stat-label">تصنيفات جديدة</div><div class="stat-value"><?= count($data['newCats']) ?></div></div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2 col-xl">
             <div class="stat-card">
                 <div class="stat-icon balance"><i class="bi bi-list-ul"></i></div>
                 <div><div class="stat-label">بنود جديدة</div><div class="stat-value"><?= count($data['newItems']) ?></div></div>
             </div>
         </div>
+        <div class="col-6 col-md-2 col-xl">
+            <div class="stat-card">
+                <div class="stat-icon balance"><i class="bi bi-tag"></i></div>
+                <div><div class="stat-label">تاقات جديدة</div><div class="stat-value"><?= count($data['newTags']) ?></div></div>
+            </div>
+        </div>
     </div>
 
-    <?php if ($data['newCats'] || $data['newItems']): ?>
+    <?php if ($data['newCats'] || $data['newItems'] || $data['newTags']): ?>
         <div class="alert alert-info">
             <?php if ($data['newCats']): ?>
                 <div><strong>تصنيفات ستُنشأ:</strong> <?= e(implode('، ', $data['newCats'])) ?></div>
             <?php endif; ?>
             <?php if ($data['newItems']): ?>
                 <div class="mt-1"><strong>بنود ستُنشأ:</strong> <?= e(implode('، ', $data['newItems'])) ?></div>
+            <?php endif; ?>
+            <?php if ($data['newTags']): ?>
+                <div class="mt-1"><strong>تاقات ستُنشأ:</strong> <?= e(implode('، ', $data['newTags'])) ?></div>
             <?php endif; ?>
         </div>
     <?php endif; ?>
@@ -404,7 +447,7 @@ require BASE_PATH . '/includes/layout/header.php';
                     <thead>
                         <tr>
                             <th>#</th><th>التاريخ</th><th>النوع</th><th>التصنيف</th>
-                            <th>البند</th><th>المبلغ</th><th>الحالة</th>
+                            <th>البند</th><th>التاق</th><th>المبلغ</th><th>الحالة</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -415,6 +458,7 @@ require BASE_PATH . '/includes/layout/header.php';
                                 <td data-label="النوع"><?= e($p['type']) ?></td>
                                 <td data-label="التصنيف"><?= e($p['category']) ?></td>
                                 <td data-label="البند"><?= e($p['item']) ?></td>
+                                <td data-label="التاق"><?= e($p['tag']) ?: '-' ?></td>
                                 <td data-label="المبلغ"><?= e($p['amount']) ?></td>
                                 <td data-label="الحالة">
                                     <?php if ($p['ok']): ?>

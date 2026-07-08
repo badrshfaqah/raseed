@@ -7,7 +7,7 @@ require_login();
 
 $totals = tx_totals('', []);
 
-$latest = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS user_name
+$latest = q('SELECT t.*, c.name AS category_name, i.name AS item_name, tg.name AS tag_name, u.name AS user_name
              ' . tx_base_query() . '
              ORDER BY t.trans_date DESC, t.id DESC
              LIMIT 10')->fetchAll();
@@ -83,6 +83,7 @@ require BASE_PATH . '/includes/layout/header.php';
                             <th>النوع</th>
                             <th>التصنيف</th>
                             <th>البند</th>
+                            <th>التاق</th>
                             <th>المبلغ</th>
                             <th>الملاحظات</th>
                             <th>المستخدم</th>
@@ -97,6 +98,11 @@ require BASE_PATH . '/includes/layout/header.php';
                                 </td>
                                 <td data-label="التصنيف"><?= e($t['category_name']) ?></td>
                                 <td data-label="البند"><?= e($t['item_name']) ?></td>
+                                <td data-label="التاق">
+                                    <?php if ($t['tag_name']): ?>
+                                        <span class="badge text-bg-light border"><?= e($t['tag_name']) ?></span>
+                                    <?php else: ?>-<?php endif; ?>
+                                </td>
                                 <td data-label="المبلغ" class="amount-<?= $t['type'] ?>">
                                     <?= ($t['type'] === 'expense' ? '-' : '+') . ' ' . format_amount($t['amount']) ?>
                                 </td>
