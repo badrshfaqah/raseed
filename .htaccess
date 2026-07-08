@@ -1,6 +1,17 @@
-# رصيد - حماية الملفات الحساسة
+# رصيد - حماية الملفات الحساسة (Apache)
 Options -Indexes
 
+# منع الوصول لملف الإعدادات
 <Files "config.php">
     Require all denied
 </Files>
+
+# منع الوصول لملفات السجلات والنسخ الاحتياطية والبيانات الحساسة
+<FilesMatch "\.(log|sql|md|json|lock|ini)$">
+    Require all denied
+</FilesMatch>
+
+# منع الوصول لملفات النقاط
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

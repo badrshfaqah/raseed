@@ -66,10 +66,10 @@ if (!empty($_SESSION['user_id'])) {
 }
 $_SESSION['last_activity'] = time();
 
-// تسجيل الأخطاء في ملف Log بدل عرضها
+// تسجيل الأخطاء في ملف Log محمي بدل عرضها
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
-ini_set('error_log', BASE_PATH . '/logs/error.log');
+ini_set('error_log', log_file());
 
 set_exception_handler(function (Throwable $e) {
     log_error('Uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());

@@ -151,14 +151,29 @@ function format_datetime(?string $dt): string
 
 /* ---------------- سجل الأخطاء ---------------- */
 
-function log_error(string $message): void
+/**
+ * مسار ملف السجل مع ضمان وجود سطر حارس في أوله.
+ * الامتداد .php وسطر الحارس يجعلان أي وصول مباشر عبر الويب
+ * يُنفَّذ كـ PHP فيخرج فوراً دون كشف المحتوى — يعمل على كل
+ * الاستضافات (Apache / nginx) دون اعتماد على .htaccess.
+ */
+function log_file(): string
 {
     $dir = BASE_PATH . '/logs';
     if (!is_dir($dir)) {
         @mkdir($dir, 0755, true);
     }
+    $file = $dir . '/error.log.php';
+    if (!is_file($file)) {
+        @file_put_contents($file, "<?php http_response_code(403); die('Forbidden'); ?>\n", LOCK_EX);
+    }
+    return $file;
+}
+
+function log_error(string $message): void
+{
     @file_put_contents(
-        $dir . '/error.log',
+        log_file(),
         '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL,
         FILE_APPEND | LOCK_EX
     );

@@ -3,3 +3,4 @@ config.php
 
 # السجلات
 logs/*.log
+logs/error.log.php

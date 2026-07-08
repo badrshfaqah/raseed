@@ -232,8 +232,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 @chmod($configFile, 0644);
 
-                // إنشاء مجلد السجلات
+                // إنشاء مجلد السجلات مع ملف سجل محمي بسطر حارس PHP
                 @mkdir($basePath . '/logs', 0755, true);
+                @file_put_contents(
+                    $basePath . '/logs/error.log.php',
+                    "<?php http_response_code(403); die('Forbidden'); ?>\n",
+                    LOCK_EX
+                );
 
                 session_destroy();
                 $step = 5;
