@@ -103,3 +103,21 @@ if (needs_upgrade() && current_user()) {
         exit;
     }
 }
+
+// النسخ الاحتياطي اليومي التلقائي (خطة احتياطية لو لم يُضبط Cron):
+// عند أول استخدام في اليوم من مستخدم مسجّل، تُنشأ نسخة اليوم مرة واحدة.
+// نضبط تاريخ اليوم أولاً (قفل تفاؤلي) لمنع تكرار التشغيل مع الطلبات المتزامنة،
+// وأي فشل يُسجَّل ولا يوقف الصفحة.
+if (current_user()
+    && setting('auto_backup_enabled', '1') === '1'
+    && setting('last_auto_backup') !== date('Y-m-d')
+    && !needs_upgrade()) {
+    set_setting('last_auto_backup', date('Y-m-d'));
+    try {
+        require_once BASE_PATH . '/includes/Xlsx.php';
+        require_once BASE_PATH . '/includes/Backup.php';
+        Backup::runDaily();
+    } catch (Throwable $e) {
+        log_error('auto-backup: ' . $e->getMessage());
+    }
+}

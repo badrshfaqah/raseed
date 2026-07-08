@@ -19,14 +19,32 @@ class Xlsx
      */
     public static function download(string $filename, array $headers, array $rows): never
     {
+        $tmp = tempnam(sys_get_temp_dir(), 'xlsx');
+        self::writeFile($tmp, $headers, $rows);
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . rawurlencode($filename) . '.xlsx"');
+        header('Content-Length: ' . filesize($tmp));
+        readfile($tmp);
+        @unlink($tmp);
+        exit;
+    }
+
+    /**
+     * توليد ملف XLSX وحفظه في مسار معيّن (يُستخدم للنسخ الاحتياطي).
+     *
+     * @param string $path    مسار الحفظ
+     * @param array  $headers رؤوس الأعمدة
+     * @param array  $rows    مصفوفة صفوف
+     */
+    public static function writeFile(string $path, array $headers, array $rows): void
+    {
         if (!class_exists('ZipArchive')) {
-            http_response_code(500);
-            exit('امتداد ZipArchive غير متوفر على السيرفر. استخدم تصدير CSV بدلاً من Excel.');
+            throw new RuntimeException('امتداد ZipArchive غير متوفر على السيرفر.');
         }
 
-        $tmp = tempnam(sys_get_temp_dir(), 'xlsx');
         $zip = new ZipArchive();
-        $zip->open($tmp, ZipArchive::OVERWRITE);
+        $zip->open($path, ZipArchive::OVERWRITE | ZipArchive::CREATE);
 
         $zip->addFromString('[Content_Types].xml',
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -88,13 +106,6 @@ class Xlsx
 
         $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
         $zip->close();
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . rawurlencode($filename) . '.xlsx"');
-        header('Content-Length: ' . filesize($tmp));
-        readfile($tmp);
-        @unlink($tmp);
-        exit;
     }
 
     private static function rowXml(array $cells, int $rowNum, bool $bold): string

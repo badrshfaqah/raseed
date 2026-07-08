@@ -4,3 +4,7 @@ config.php
 # السجلات
 logs/*.log
 logs/error.log.php
+
+# النسخ الاحتياطية اليومية (تُنشأ على السيرفر)
+backups/*.sql
+backups/*.xlsx

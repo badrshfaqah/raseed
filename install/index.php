@@ -202,6 +202,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // ختم إصدار بنية القاعدة حتى لا يطلب النظام ترقية بعد تثبيت جديد
                 $st->execute(['db_version', (string) RASEED_DB_VERSION]);
 
+                // إعدادات النسخ الاحتياطي التلقائي
+                $st->execute(['auto_backup_enabled', '1']);
+                $st->execute(['backup_retention_days', '14']);
+                $st->execute(['backup_token', bin2hex(random_bytes(16))]);
+
                 // التصنيفات والبنود الافتراضية
                 $catSt  = $pdo->prepare('INSERT IGNORE INTO categories (name) VALUES (?)');
                 $itemSt = $pdo->prepare('INSERT IGNORE INTO items (category_id, name) VALUES (?, ?)');
@@ -242,6 +247,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     "<?php http_response_code(403); die('Forbidden'); ?>\n",
                     LOCK_EX
                 );
+
+                // إنشاء مجلد النسخ الاحتياطي المحمي
+                @mkdir($basePath . '/backups', 0755, true);
+                @file_put_contents($basePath . '/backups/.htaccess', "Require all denied\nDeny from all\n");
+                @file_put_contents($basePath . '/backups/index.html', "<!-- ممنوع الوصول المباشر -->\n");
 
                 session_destroy();
                 $step = 5;
