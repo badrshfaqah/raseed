@@ -58,6 +58,7 @@ function nav_link(string $href, string $icon, string $label, string $current): s
 
             <?php if (is_admin()): ?>
                 <div class="nav-section">الإدارة</div>
+                <?= nav_link('import.php', 'bi-file-earmark-arrow-up', 'استيراد من Excel', $currentPage) ?>
                 <?= nav_link('categories.php', 'bi-tags', 'التصنيفات', $currentPage) ?>
                 <?= nav_link('items.php', 'bi-list-ul', 'البنود', $currentPage) ?>
                 <?= nav_link('users.php', 'bi-people', 'المستخدمون', $currentPage) ?>
