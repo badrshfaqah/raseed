@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>عن برنامج رصيد | نظام إدارة الإيرادات والمصروفات</title>
+<meta name="description" content="تعرّف على برنامج رصيد بالتفصيل: نظرة عامة، الفلسفة، قائمة المميزات الكاملة، الجداول والبنية، والحلول التي يقدّمها. أحد منتجات منصة المجرات للبرمجة.">
+<meta name="theme-color" content="#14523f">
+<meta property="og:title" content="عن برنامج رصيد">
+<meta property="og:description" content="نظام مالي عربي مجاني لإدارة الإيرادات والمصروفات — نظرة تفصيلية.">
+<meta property="og:image" content="assets/img/cover.png">
+<link rel="icon" type="image/png" href="assets/img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .about-hero { padding: 132px 0 40px; }
+  .about-hero .eyebrow { margin-bottom: 16px; }
+  .about-hero h1 { font-size: clamp(2rem,4.5vw,3.2rem); font-weight: 900; color: var(--ink); letter-spacing: -1px; line-height: 1.2; }
+  .about-hero p.lead { font-size: 1.15rem; color: var(--muted); max-width: 760px; margin-top: 18px; }
+  .prose { max-width: 860px; margin-inline: auto; }
+  .prose h2 { font-size: 1.6rem; font-weight: 900; color: var(--ink); margin: 42px 0 14px; }
+  .prose h3 { font-size: 1.18rem; font-weight: 700; color: var(--green-700); margin: 26px 0 8px; }
+  .prose p { color: var(--text); margin-bottom: 14px; }
+  .prose ul { list-style: none; margin: 6px 0 18px; display: grid; gap: 10px; }
+  .prose ul li { display: flex; gap: 12px; align-items: flex-start; color: var(--text); }
+  .prose ul li::before { content: ''; width: 22px; height: 22px; flex-shrink: 0; margin-top: 3px; border-radius: 50%;
+    background: var(--green-100) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%231e6f5c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/14px no-repeat; }
+  .tbl { width: 100%; border-collapse: collapse; margin: 10px 0 20px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .tbl th, .tbl td { text-align: right; padding: 13px 18px; border-bottom: 1px solid var(--line); font-size: .97rem; }
+  .tbl th { background: var(--green-50); color: var(--ink); font-weight: 700; }
+  .tbl tr:last-child td { border-bottom: 0; }
+  .back-cta { text-align: center; margin: 20px 0 0; }
+</style>
+</head>
+<body>
+
+<header class="header scrolled" id="header">
+  <div class="wrap nav">
+    <a class="brand" href="index.html"><img src="assets/img/logo.png" alt="شعار رصيد"><span>رصيد<small>أحد منتجات المجرات</small></span></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="index.html#features">المميزات</a>
+      <a href="index.html#gallery">الواجهات</a>
+      <a href="index.html#requirements">المتطلبات</a>
+      <a href="index.html#faq">الأسئلة</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="index.html" class="btn btn-ghost">الرئيسية</a>
+      <a href="index.html#download" class="btn btn-primary">تحميل مجاني</a>
+      <button class="nav-toggle" id="navToggle" aria-label="القائمة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<section class="about-hero">
+  <div class="wrap prose reveal">
+    <span class="eyebrow">عن البرنامج</span>
+    <h1>برنامج رِصيد</h1>
+    <p class="lead">نظام ويب مالي عربي — بسيط وخفيف وسريع — لإدارة الإيرادات والمصروفات للمشاريع والجهات، ومعرفة الرصيد الحالي لحظياً، مع تقارير وإحصائيات ومزامنة اختيارية مع Google Sheets. مصمّم ليعمل على أي استضافة PHP عادية دون أي تعقيد.</p>
+  </div>
+</section>
+
+<section class="section" style="padding-top:24px;">
+  <div class="wrap prose">
+
+    <h2 class="reveal">نظرة عامة</h2>
+    <p class="reveal">صُمّم «رصيد» ليكون بديلاً منظّماً عن الدفاتر الورقية وملفات Excel المبعثرة. يجمع كل عملياتك المالية في مكان واحد، ويحدّث رصيدك فور كل إدخال، ويمنحك تقارير جاهزة تساعدك على اتخاذ قرارات مالية أفضل — كل ذلك بواجهة عربية أنيقة تعمل على الكمبيوتر والجوال.</p>
+    <p class="reveal">الاعتماد الأساسي على قاعدة بيانات MySQL موثوقة، مع نسخ احتياطي يومي تلقائي يضمن بقاء بياناتك آمنة حتى عند أي عطل. والبرنامج <strong>مجاني بالكامل</strong> ويمكن استخدامه دون أي رسوم.</p>
+
+    <h2 class="reveal">الفلسفة: صغير، سريع، وبلا تعقيد</h2>
+    <p class="reveal">بُني «رصيد» بلغة PHP النقية دون أطر ثقيلة أو أدوات بناء، ليبقى صغير الحجم وسهل التركيب على أي استضافة مشتركة خلال دقائق عبر معالج تثبيت بسيط — دون Composer أو Node أو أوامر خادم، ودون أي تأثير على المواقع الأخرى (مثل WordPress) على نفس الاستضافة.</p>
+
+    <h2 class="reveal">المميزات الكاملة</h2>
+
+    <h3 class="reveal">الإدارة المالية</h3>
+    <ul>
+      <li class="reveal">تسجيل الإيرادات والمصروفات مع منع القيم الصفرية والسالبة.</li>
+      <li class="reveal">لوحة تحكم بالرصيد الحالي والإجماليات وآخر العمليات.</li>
+      <li class="reveal">كشف حساب مفصّل مع فلترة (تاريخ، نوع، تصنيف، بند، تاق) وبحث.</li>
+    </ul>
+
+    <h3 class="reveal">التنظيم</h3>
+    <ul>
+      <li class="reveal">تصنيفات وبنود مترابطة (اختيار التصنيف يعرض بنوده فقط).</li>
+      <li class="reveal">تاقات (وسوم) لتتبّع إيرادات ومصروفات كل مشروع أو جهة على حِدة.</li>
+    </ul>
+
+    <h3 class="reveal">التقارير والإحصائيات</h3>
+    <ul>
+      <li class="reveal">رسوم بيانية للإيرادات والمصروفات شهرياً وتوزيع المصروفات حسب التصنيف.</li>
+      <li class="reveal">أكثر التصنيفات والبنود صرفاً، وتحليل الإيرادات والمصروفات حسب كل تاق.</li>
+    </ul>
+
+    <h3 class="reveal">الاستيراد والتصدير والنسخ الاحتياطي</h3>
+    <ul>
+      <li class="reveal">استيراد العمليات دفعة واحدة من قالب Excel جاهز مع إنشاء التصنيفات والبنود والتاقات تلقائياً.</li>
+      <li class="reveal">تصدير Excel و CSV للكل أو الإيرادات أو المصروفات أو نتائج البحث.</li>
+      <li class="reveal">نسخ احتياطي يومي تلقائي (قاعدة بيانات + Excel) واستعادة بضغطة واحدة.</li>
+    </ul>
+
+    <h3 class="reveal">المستخدمون والصلاحيات والمزامنة</h3>
+    <ul>
+      <li class="reveal">مدير نظام كامل الصلاحيات، ومستخدمون بصلاحية «إدخال» أو «مشاهدة فقط».</li>
+      <li class="reveal">مزامنة تلقائية اختيارية مع Google Sheets مع سجل مزامنة كامل.</li>
+      <li class="reveal">نظام إصدارات وترقية تلقائي للتحديث دون فقد البيانات.</li>
+    </ul>
+
+    <h2 class="reveal">الحلول التي يقدّمها</h2>
+    <ul>
+      <li class="reveal">بديل عن الدفاتر الورقية وملفات Excel المبعثرة بنظام مركزي منظّم.</li>
+      <li class="reveal">معرفة الرصيد الحقيقي في أي وقت دون حسابات يدوية.</li>
+      <li class="reveal">تتبّع مالية كل مشروع منفصلاً عبر التاقات.</li>
+      <li class="reveal">تقارير جاهزة للإدارة دون جهد أو برامج إضافية.</li>
+      <li class="reveal">حماية البيانات من الضياع عبر النسخ الاحتياطي اليومي.</li>
+      <li class="reveal">تنظيم صلاحيات الموظفين بدقة.</li>
+      <li class="reveal">مشاركة البيانات مع الفريق تلقائياً عبر Google Sheets.</li>
+    </ul>
+
+    <h2 class="reveal">المميزات التقنية والبنية</h2>
+    <p class="reveal">النظام مبني على PHP نقي و MySQL، ويستخدم Prepared Statements و Transactions لسلامة البيانات، مع طبقات حماية متعددة (تشفير كلمات المرور، حماية CSRF، قفل محاولات الدخول، وترويسات أمان). الجداول الأساسية:</p>
+    <table class="tbl reveal">
+      <tr><th>الجدول</th><th>الوظيفة</th></tr>
+      <tr><td>users</td><td>المستخدمون وصلاحياتهم</td></tr>
+      <tr><td>categories / items</td><td>التصنيفات والبنود المترابطة</td></tr>
+      <tr><td>tags</td><td>التاقات (وسوم المشاريع)</td></tr>
+      <tr><td>transactions</td><td>العمليات المالية (إيرادات ومصروفات)</td></tr>
+      <tr><td>google_sheet_sync_logs</td><td>سجل مزامنة Google Sheets</td></tr>
+      <tr><td>settings</td><td>إعدادات النظام</td></tr>
+    </table>
+
+    <h2 class="reveal">متطلبات التشغيل</h2>
+    <table class="tbl reveal">
+      <tr><th>المتطلب</th><th>التفاصيل</th></tr>
+      <tr><td>الاستضافة</td><td>أي استضافة PHP عادية (مشتركة أو خاصة)</td></tr>
+      <tr><td>PHP</td><td>الإصدار 8.0 أو أحدث</td></tr>
+      <tr><td>قاعدة البيانات</td><td>MySQL 5.7+ أو MariaDB 10.3+</td></tr>
+      <tr><td>الامتدادات</td><td>PDO MySQL، cURL، OpenSSL، mbstring، JSON، (Zip لتصدير Excel)</td></tr>
+      <tr><td>المتصفح</td><td>أي متصفح حديث</td></tr>
+    </table>
+
+    <div class="back-cta reveal">
+      <a href="index.html#download" class="btn btn-primary btn-lg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        تحميل البرنامج مجاناً
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-bottom" style="border-top:0;padding-top:0;">
+      <span>© <span id="year">2026</span> رصيد — جميع الحقوق محفوظة.</span>
+      <span class="mgrt">تطوير <a href="https://ar.almgrat.com" target="_blank" rel="noopener">منصة المجرات للبرمجة</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>
