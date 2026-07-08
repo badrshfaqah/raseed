@@ -64,6 +64,9 @@ function nav_link(string $href, string $icon, string $label, string $current): s
                 <?= nav_link('sync_log.php', 'bi-arrow-repeat', 'سجل المزامنة', $currentPage) ?>
                 <?= nav_link('backup.php', 'bi-database-down', 'النسخ الاحتياطي', $currentPage) ?>
                 <?= nav_link('settings.php', 'bi-gear', 'الإعدادات', $currentPage) ?>
+                <?php if (function_exists('needs_upgrade') && needs_upgrade()): ?>
+                    <?= nav_link('upgrade.php', 'bi-arrow-up-circle', 'ترقية النظام', $currentPage) ?>
+                <?php endif; ?>
             <?php endif; ?>
         </nav>
 
@@ -101,3 +104,15 @@ function nav_link(string $href, string $icon, string $label, string $current): s
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endforeach; ?>
+
+            <?php if (is_admin() && $currentPage !== 'upgrade.php' && function_exists('needs_upgrade') && needs_upgrade()): ?>
+                <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>
+                        <i class="bi bi-exclamation-triangle"></i>
+                        تم رفع إصدار جديد من الملفات، وقاعدة البيانات تحتاج إلى ترقية لتتوافق معه.
+                    </span>
+                    <a href="<?= APP_URL ?>upgrade.php" class="btn btn-sm btn-warning">
+                        <i class="bi bi-arrow-up-circle"></i> ترقية الآن
+                    </a>
+                </div>
+            <?php endif; ?>

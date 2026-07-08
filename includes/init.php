@@ -42,6 +42,7 @@ session_start();
 require BASE_PATH . '/includes/db.php';
 require BASE_PATH . '/includes/functions.php';
 require BASE_PATH . '/includes/auth.php';
+require BASE_PATH . '/includes/migrations.php';
 
 send_security_headers();
 

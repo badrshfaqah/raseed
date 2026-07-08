@@ -25,6 +25,7 @@ if (is_file($configFile)) {
 }
 
 require __DIR__ . '/schema.php';
+require dirname(__DIR__) . '/includes/migrations.php'; // لثابت RASEED_DB_VERSION
 
 // ترويسات أمنية (المثبّت لا يمر عبر init.php)
 header('X-Frame-Options: DENY');
@@ -198,6 +199,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($sys as $k => $v) {
                     $st->execute([$k, $v]);
                 }
+                // ختم إصدار بنية القاعدة حتى لا يطلب النظام ترقية بعد تثبيت جديد
+                $st->execute(['db_version', (string) RASEED_DB_VERSION]);
 
                 // التصنيفات والبنود الافتراضية
                 $catSt  = $pdo->prepare('INSERT IGNORE INTO categories (name) VALUES (?)');
