@@ -9,7 +9,7 @@ $id     = (int)($_GET['id'] ?? 0);
 $isEdit = $id > 0;
 $errors = [];
 
-$user = [
+$editUser = [
     'name' => '', 'username' => '', 'email' => '', 'phone' => '',
     'role' => 'user', 'permission' => 'view', 'status' => 1,
 ];
@@ -20,13 +20,13 @@ if ($isEdit) {
         flash('danger', 'المستخدم غير موجود.');
         redirect(APP_URL . 'users.php');
     }
-    $user = $found;
+    $editUser = $found;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
-    $user = array_merge($user, [
+    $editUser = array_merge($editUser, [
         'name'       => trim($_POST['name'] ?? ''),
         'username'   => trim($_POST['username'] ?? ''),
         'email'      => trim($_POST['email'] ?? ''),
@@ -38,13 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string)($_POST['password'] ?? '');
     $confirm  = (string)($_POST['confirm'] ?? '');
 
-    if ($user['name'] === '') {
+    if ($editUser['name'] === '') {
         $errors[] = 'الاسم مطلوب.';
     }
-    if (!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $user['username'])) {
+    if (!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $editUser['username'])) {
         $errors[] = 'اسم المستخدم يجب أن يكون بأحرف إنجليزية وأرقام (3-50 حرفاً).';
     }
-    if ($user['email'] !== '' && !filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
+    if ($editUser['email'] !== '' && !filter_var($editUser['email'], FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'البريد الإلكتروني غير صالح.';
     }
     if (!$isEdit || $password !== '') {
@@ -56,9 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     // منع المدير من إزالة صلاحية الإدارة عن نفسه
-    if ($isEdit && $id === (int)current_user()['id'] && $user['role'] !== 'admin') {
+    if ($isEdit && $id === (int)current_user()['id'] && $editUser['role'] !== 'admin') {
         $errors[] = 'لا يمكنك إزالة صلاحية مدير النظام عن حسابك الحالي.';
-        $user['role'] = 'admin';
+        $editUser['role'] = 'admin';
     }
 
     if (!$errors) {
@@ -66,8 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($isEdit) {
                 q('UPDATE users SET name = ?, username = ?, email = ?, phone = ?, role = ?, permission = ?, status = ?
                    WHERE id = ?',
-                  [$user['name'], $user['username'], $user['email'] ?: null, $user['phone'] ?: null,
-                   $user['role'], $user['permission'], $user['status'], $id]);
+                  [$editUser['name'], $editUser['username'], $editUser['email'] ?: null, $editUser['phone'] ?: null,
+                   $editUser['role'], $editUser['permission'], $editUser['status'], $id]);
                 if ($password !== '') {
                     q('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $id]);
                 }
@@ -75,8 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 q('INSERT INTO users (name, username, password_hash, email, phone, role, permission, status)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                  [$user['name'], $user['username'], password_hash($password, PASSWORD_DEFAULT),
-                   $user['email'] ?: null, $user['phone'] ?: null, $user['role'], $user['permission'], $user['status']]);
+                  [$editUser['name'], $editUser['username'], password_hash($password, PASSWORD_DEFAULT),
+                   $editUser['email'] ?: null, $editUser['phone'] ?: null, $editUser['role'], $editUser['permission'], $editUser['status']]);
                 flash('success', 'تم إنشاء المستخدم بنجاح.');
             }
             redirect(APP_URL . 'users.php');
@@ -109,11 +109,11 @@ require BASE_PATH . '/includes/layout/header.php';
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">الاسم <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="name" value="<?= e($user['name']) ?>" required>
+                            <input type="text" class="form-control" name="name" value="<?= e($editUser['name']) ?>" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">اسم المستخدم <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="username" value="<?= e($user['username']) ?>" required dir="ltr">
+                            <input type="text" class="form-control" name="username" value="<?= e($editUser['username']) ?>" required dir="ltr">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">كلمة المرور <?= $isEdit ? '<small class="text-muted">(اتركها فارغة للإبقاء عليها)</small>' : '<span class="text-danger">*</span>' ?></label>
@@ -125,31 +125,31 @@ require BASE_PATH . '/includes/layout/header.php';
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">البريد الإلكتروني (اختياري)</label>
-                            <input type="email" class="form-control" name="email" value="<?= e($user['email'] ?? '') ?>" dir="ltr">
+                            <input type="email" class="form-control" name="email" value="<?= e($editUser['email'] ?? '') ?>" dir="ltr">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">الجوال (اختياري)</label>
-                            <input type="text" class="form-control" name="phone" value="<?= e($user['phone'] ?? '') ?>" dir="ltr">
+                            <input type="text" class="form-control" name="phone" value="<?= e($editUser['phone'] ?? '') ?>" dir="ltr">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">نوع الحساب</label>
                             <select class="form-select" name="role" id="roleSelect">
-                                <option value="user" <?= $user['role'] === 'user' ? 'selected' : '' ?>>مستخدم</option>
-                                <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>مدير النظام</option>
+                                <option value="user" <?= $editUser['role'] === 'user' ? 'selected' : '' ?>>مستخدم</option>
+                                <option value="admin" <?= $editUser['role'] === 'admin' ? 'selected' : '' ?>>مدير النظام</option>
                             </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">صلاحية المستخدم</label>
                             <select class="form-select" name="permission" id="permissionSelect">
-                                <option value="entry" <?= $user['permission'] === 'entry' ? 'selected' : '' ?>>إدخال</option>
-                                <option value="view" <?= $user['permission'] === 'view' ? 'selected' : '' ?>>مشاهدة فقط</option>
+                                <option value="entry" <?= $editUser['permission'] === 'entry' ? 'selected' : '' ?>>إدخال</option>
+                                <option value="view" <?= $editUser['permission'] === 'view' ? 'selected' : '' ?>>مشاهدة فقط</option>
                             </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">الحالة</label>
                             <select class="form-select" name="status">
-                                <option value="1" <?= (int)$user['status'] === 1 ? 'selected' : '' ?>>مفعّل</option>
-                                <option value="0" <?= (int)$user['status'] === 0 ? 'selected' : '' ?>>موقوف</option>
+                                <option value="1" <?= (int)$editUser['status'] === 1 ? 'selected' : '' ?>>مفعّل</option>
+                                <option value="0" <?= (int)$editUser['status'] === 0 ? 'selected' : '' ?>>موقوف</option>
                             </select>
                         </div>
                     </div>
