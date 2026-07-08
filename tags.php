@@ -3,7 +3,7 @@
  * رصيد - إدارة التاقات (مدير النظام فقط)
  *
  * التاق وسم إضافي اختياري على العملية (مثل مشروع أو جهة أو نشاط)،
- * وتعرض هذه الصفحة لكل تاق إجمالي إيراداته ومصروفاته ورصيده.
+ * وتعرض هذه الصفحة لكل تاق إجمالي المبالغ المرتبطة به من إيرادات ومصروفات.
  */
 require __DIR__ . '/includes/init.php';
 require_admin();
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(APP_URL . 'tags.php');
 }
 
-// كل تاق مع إجمالي إيراداته ومصروفاته ورصيده وعدد عملياته
+// كل تاق مع إجمالي المبالغ المرتبطة به من إيرادات ومصروفات وعدد عملياته
 $tags = q("SELECT tg.*,
               COALESCE(SUM(CASE WHEN t.type = 'income'  THEN t.amount END), 0) AS income,
               COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount END), 0) AS expense,
@@ -98,25 +98,21 @@ require BASE_PATH . '/includes/layout/header.php';
                             <thead>
                                 <tr>
                                     <th>التاق</th>
-                                    <th>الإيرادات</th>
-                                    <th>المصروفات</th>
-                                    <th>الرصيد</th>
+                                    <th>الإيرادات المرتبطة</th>
+                                    <th>المصروفات المرتبطة</th>
                                     <th>العمليات</th>
                                     <th>الحالة</th>
                                     <th class="text-center">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($tags as $t): $balance = (float)$t['income'] - (float)$t['expense']; ?>
+                                <?php foreach ($tags as $t): ?>
                                     <tr>
                                         <td data-label="التاق" class="fw-bold">
                                             <a href="<?= APP_URL ?>transactions.php?tag_id=<?= $t['id'] ?>"><?= e($t['name']) ?></a>
                                         </td>
-                                        <td data-label="الإيرادات" class="amount-income"><?= format_amount($t['income']) ?></td>
-                                        <td data-label="المصروفات" class="amount-expense"><?= format_amount($t['expense']) ?></td>
-                                        <td data-label="الرصيد" class="<?= $balance >= 0 ? 'amount-income' : 'amount-expense' ?>">
-                                            <?= format_amount($balance) ?>
-                                        </td>
+                                        <td data-label="الإيرادات المرتبطة" class="amount-income"><?= format_amount($t['income']) ?></td>
+                                        <td data-label="المصروفات المرتبطة" class="amount-expense"><?= format_amount($t['expense']) ?></td>
                                         <td data-label="العمليات"><?= number_format((float)$t['tx_count']) ?></td>
                                         <td data-label="الحالة">
                                             <span class="badge text-bg-<?= $t['status'] ? 'success' : 'secondary' ?>">
