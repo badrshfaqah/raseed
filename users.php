@@ -178,8 +178,9 @@ require BASE_PATH . '/includes/layout/header.php';
 </div>
 
 <?php
-$pageScripts = <<<'HTML'
-<script>
+$nonce = csp_nonce();
+$pageScripts = <<<HTML
+<script nonce="{$nonce}">
 document.getElementById('resetModal').addEventListener('show.bs.modal', function (event) {
     const btn = event.relatedTarget;
     document.getElementById('resetId').value = btn.getAttribute('data-id');

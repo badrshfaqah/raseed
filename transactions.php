@@ -66,7 +66,7 @@ require BASE_PATH . '/includes/layout/header.php';
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label small">التصنيف</label>
-                <select class="form-select form-select-sm" name="category_id" onchange="this.form.submit()">
+                <select class="form-select form-select-sm" name="category_id" data-autosubmit>
                     <option value="">الكل</option>
                     <?php foreach ($categories as $c): ?>
                         <option value="<?= $c['id'] ?>" <?= (int)($_GET['category_id'] ?? 0) === (int)$c['id'] ? 'selected' : '' ?>>

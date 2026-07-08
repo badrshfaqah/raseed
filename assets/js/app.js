@@ -18,6 +18,13 @@
     });
     backdrop && backdrop.addEventListener('click', closeSidebar);
 
+    /* إرسال النموذج تلقائياً عند تغيير قوائم الفلترة */
+    document.querySelectorAll('select[data-autosubmit]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            select.form && select.form.submit();
+        });
+    });
+
     /* تأكيد الحذف */
     document.querySelectorAll('form[data-confirm]').forEach(function (form) {
         form.addEventListener('submit', function (e) {

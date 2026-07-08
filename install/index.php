@@ -421,6 +421,10 @@ function old(string $key, string $default = ''): string
                     <i class="bi bi-check-circle-fill text-success" style="font-size:3.5rem"></i>
                     <h4 class="mt-3">تم تثبيت النظام بنجاح</h4>
                     <p class="text-muted">تم إنشاء الجداول وملف الإعدادات وحساب المدير.<br>تم تعطيل صفحة التثبيت تلقائياً.</p>
+                    <div class="alert alert-info py-2 small text-start">
+                        <i class="bi bi-shield-check"></i>
+                        لحماية إضافية يُنصح بحذف مجلد <code>install</code> من السيرفر الآن بعد اكتمال التثبيت.
+                    </div>
                     <a href="../login.php" class="btn btn-primary px-5 mt-2">تسجيل الدخول <i class="bi bi-box-arrow-in-left"></i></a>
                 </div>
             <?php elseif ($errors): ?>

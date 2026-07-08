@@ -164,8 +164,9 @@ require BASE_PATH . '/includes/layout/header.php';
 </div>
 
 <?php
-$pageScripts = <<<'HTML'
-<script>
+$nonce = csp_nonce();
+$pageScripts = <<<HTML
+<script nonce="{$nonce}">
 document.getElementById('editModal').addEventListener('show.bs.modal', function (event) {
     const btn = event.relatedTarget;
     document.getElementById('editId').value = btn.getAttribute('data-id');

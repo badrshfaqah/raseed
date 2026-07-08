@@ -167,8 +167,9 @@ require BASE_PATH . '/includes/layout/header.php';
 </div>
 
 <?php
-$pageScripts = <<<'HTML'
-<script>
+$nonce = csp_nonce();
+$pageScripts = <<<HTML
+<script nonce="{$nonce}">
 // صلاحية المستخدم تنطبق على حسابات "مستخدم" فقط
 const roleSelect = document.getElementById('roleSelect');
 const permissionSelect = document.getElementById('permissionSelect');

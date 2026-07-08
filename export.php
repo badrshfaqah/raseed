@@ -57,7 +57,15 @@ if ($format === 'csv') {
     fwrite($out, "\xEF\xBB\xBF");
     fputcsv($out, $headers);
     foreach ($data as $row) {
-        fputcsv($out, $row);
+        // حماية من حقن معادلات CSV: أي خلية نصية تبدأ بـ = + - @ أو Tab
+        // قد ينفذها Excel كمعادلة، لذا تُسبق بفاصلة عليا تجعلها نصاً صرفاً
+        $safe = array_map(function ($cell) {
+            if (is_string($cell) && $cell !== '' && strpbrk($cell[0], "=+-@\t\r") !== false) {
+                return "'" . $cell;
+            }
+            return $cell;
+        }, $row);
+        fputcsv($out, $safe);
     }
     fclose($out);
     exit;

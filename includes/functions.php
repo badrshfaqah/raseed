@@ -5,9 +5,23 @@
 defined('RASEED') || exit;
 
 /**
+ * قيمة Nonce عشوائية لكل طلب: السكربتات الداخلية التي تحملها فقط
+ * هي المسموح بتنفيذها، فأي سكربت يُحقن عبر ثغرة XSS محتملة لن يعمل.
+ */
+function csp_nonce(): string
+{
+    static $nonce = null;
+    if ($nonce === null) {
+        $nonce = base64_encode(random_bytes(16));
+    }
+    return $nonce;
+}
+
+/**
  * ترويسات أمنية تُرسل مع كل صفحة:
  * منع التضمين داخل إطارات، منع تخمين نوع المحتوى،
- * وسياسة أمان محتوى (CSP) تحصر المصادر في النظام و CDN المكتبات فقط.
+ * وسياسة أمان محتوى (CSP) بنظام Nonce تحصر السكربتات
+ * في ملفات النظام و CDN المكتبات والسكربتات الداخلية الموقعة فقط.
  */
 function send_security_headers(): void
 {
@@ -20,14 +34,19 @@ function send_security_headers(): void
     header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
     header("Content-Security-Policy: "
         . "default-src 'self'; "
-        . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        . "script-src 'self' 'nonce-" . csp_nonce() . "' https://cdn.jsdelivr.net; "
         . "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
         . "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
         . "img-src 'self' data:; "
         . "connect-src 'self'; "
         . "frame-ancestors 'none'; "
         . "base-uri 'self'; "
-        . "form-action 'self'");
+        . "form-action 'self'; "
+        . "object-src 'none'");
+    // فرض HTTPS لمدة سنة عندما يكون الموقع مخدوماً عبره
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=31536000');
+    }
 }
 
 /** تهريب HTML */

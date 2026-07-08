@@ -105,7 +105,7 @@ require BASE_PATH . '/includes/layout/header.php';
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <span>البنود (<?= count($items) ?>)</span>
                 <form method="get" class="d-flex gap-2">
-                    <select class="form-select form-select-sm" name="category_id" onchange="this.form.submit()">
+                    <select class="form-select form-select-sm" name="category_id" data-autosubmit>
                         <option value="">جميع التصنيفات</option>
                         <?php foreach ($categories as $c): ?>
                             <option value="<?= $c['id'] ?>" <?= $filterCategory === (int)$c['id'] ? 'selected' : '' ?>>
@@ -211,8 +211,9 @@ require BASE_PATH . '/includes/layout/header.php';
 </div>
 
 <?php
-$pageScripts = <<<'HTML'
-<script>
+$nonce = csp_nonce();
+$pageScripts = <<<HTML
+<script nonce="{$nonce}">
 document.getElementById('editModal').addEventListener('show.bs.modal', function (event) {
     const btn = event.relatedTarget;
     document.getElementById('editId').value = btn.getAttribute('data-id');

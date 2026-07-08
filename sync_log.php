@@ -53,7 +53,7 @@ require BASE_PATH . '/includes/layout/header.php';
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span>سجل المزامنة (<?= number_format($count) ?>)</span>
         <form method="get" class="d-flex gap-2">
-            <select class="form-select form-select-sm" name="status" onchange="this.form.submit()">
+            <select class="form-select form-select-sm" name="status" data-autosubmit>
                 <option value="">جميع الحالات</option>
                 <option value="success" <?= $statusFilter === 'success' ? 'selected' : '' ?>>ناجحة</option>
                 <option value="failed" <?= $statusFilter === 'failed' ? 'selected' : '' ?>>فاشلة</option>

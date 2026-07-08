@@ -58,7 +58,9 @@ raseed/
   - كلمات المرور مشفرة بـ `password_hash` (bcrypt)، مع مقارنة ثابتة التوقيت تمنع كشف أسماء المستخدمين.
   - **قفل محاولات الدخول**: بعد 5 محاولات فاشلة خلال 15 دقيقة (لنفس المستخدم أو نفس الـ IP) يُوقف الدخول مؤقتاً، مع إبطاء كل محاولة فاشلة.
   - **تحصين الجلسات**: ربط الجلسة ببصمة المتصفح، إنهاء تلقائي بعد 30 دقيقة خمول، تجديد دوري لمعرف الجلسة، و`use_strict_mode`.
-  - **ترويسات أمنية** على كل صفحة: `Content-Security-Policy` (تحصر المصادر في النظام و CDN المكتبات)، `X-Frame-Options: DENY`، `X-Content-Type-Options: nosniff`، `Referrer-Policy`.
-  - `config.php` و `includes/` و `logs/` محمية بـ `.htaccess` (مع `index.html` احتياطي للاستضافات غير Apache).
+  - **ترويسات أمنية** على كل صفحة: `Content-Security-Policy` بنظام **Nonce** (أي سكربت مُحقن لا يُنفَّذ حتى لو وُجدت ثغرة XSS)، `X-Frame-Options: DENY`، `X-Content-Type-Options: nosniff`، `Referrer-Policy`، `Permissions-Policy`، و`HSTS` عند العمل عبر HTTPS.
+  - **حماية من حقن معادلات CSV**: الخلايا النصية التي تبدأ بمحارف المعادلات (`=` `+` `-` `@`) تُحيَّد قبل التصدير فلا ينفذها Excel.
+  - **حدود مدخلات**: سقف أعلى للمبلغ، وطول أقصى للملاحظات (1000 حرف).
+  - `config.php` و `includes/` و `logs/` محمية بـ `.htaccess` (مع `index.html` احتياطي للاستضافات غير Apache)، ويُنصح بحذف مجلد `install/` بعد اكتمال التثبيت.
 - عمليات الحفظ تتم داخل Transactions لضمان سلامة البيانات، والأخطاء تُسجَّل في `logs/error.log`.
 - الجداول: `users`, `categories`, `items`, `transactions`, `google_sheet_sync_logs`, `settings`.

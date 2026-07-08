@@ -177,9 +177,10 @@ $chartData = json_encode([
     'pieValues' => $pieValues,
 ], JSON_UNESCAPED_UNICODE);
 
+$nonce = csp_nonce();
 $pageScripts = <<<HTML
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script>
+<script nonce="{$nonce}">
 const data = {$chartData};
 Chart.defaults.font.family = 'Tajawal, sans-serif';
 

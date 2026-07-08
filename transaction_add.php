@@ -32,6 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($amount <= 0) {
         $errors[] = 'المبلغ يجب أن يكون أكبر من صفر (لا يسمح بالصفر أو القيم السالبة).';
+    } elseif ($amount > 999999999999.99) {
+        $errors[] = 'المبلغ يتجاوز الحد الأقصى المسموح.';
+    }
+    if (mb_strlen($notes) > 1000) {
+        $errors[] = 'الملاحظات يجب ألا تتجاوز 1000 حرف.';
     }
 
     // التحقق من أن البند يتبع التصنيف المختار فعلاً
@@ -126,7 +131,7 @@ require BASE_PATH . '/includes/layout/header.php';
 
                     <div class="mb-4">
                         <label class="form-label">الملاحظات</label>
-                        <textarea class="form-control" name="notes" rows="3"><?= e($_POST['notes'] ?? '') ?></textarea>
+                        <textarea class="form-control" name="notes" rows="3" maxlength="1000"><?= e($_POST['notes'] ?? '') ?></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-<?= $isIncome ? 'success' : 'danger' ?> w-100 btn-lg">
