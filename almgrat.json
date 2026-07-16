@@ -1,0 +1,17 @@
+{
+    "name": "رصيد",
+    "name_en": "Raseed",
+    "slug": "raseed",
+    "version": "1.0.0",
+    "exclude_from_package": [
+        "Raseed"
+    ],
+    "preserve": [
+        "config.php",
+        "logs",
+        "backups"
+    ],
+    "update": {
+        "entry_url": "/upgrade.php"
+    }
+}
