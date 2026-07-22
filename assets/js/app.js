@@ -84,16 +84,22 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
                 body: 'id=' + encodeURIComponent(btn.getAttribute('data-tx-id')) + '&csrf_token=' + encodeURIComponent(csrf)
             })
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (!r.ok) { throw new Error('http_' + r.status); }
+                    return r.json();
+                })
                 .then(function (data) {
-                    if (!data.ok) return;
+                    if (!data.ok) { throw new Error(data.error || 'unknown'); }
                     const received = Number(data.receipt_status) === 1;
                     btn.classList.toggle('badge-receipt-received', received);
                     btn.classList.toggle('badge-receipt-missing', !received);
                     btn.querySelector('.receipt-icon').className = 'bi receipt-icon ' + (received ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill');
                     btn.querySelector('.receipt-label').textContent = received ? 'تم الاستلام' : 'لم يستلم';
                 })
-                .catch(function () { /* يبقى العرض كما هو */ })
+                .catch(function (err) {
+                    console.error('toggle_receipt failed:', err);
+                    alert('تعذّر تحديث حالة الاستلام. إذا استمرت المشكلة تأكد من ترقية قاعدة البيانات من صفحة "ترقية النظام"، أو أعد تحميل الصفحة.');
+                })
                 .finally(function () { btn.disabled = false; });
         });
     });
