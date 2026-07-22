@@ -71,4 +71,30 @@
             loadItems(catSelect.value, true);
         }
     });
+
+    /* تبديل حالة استلام الإيصال/الفاتورة على العملية */
+    const appUrl = document.body.getAttribute('data-app-url') || './';
+    const csrf   = document.body.getAttribute('data-csrf') || '';
+    document.querySelectorAll('[data-receipt-toggle]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (btn.disabled) return;
+            btn.disabled = true;
+            fetch(appUrl + 'api/toggle_receipt.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+                body: 'id=' + encodeURIComponent(btn.getAttribute('data-tx-id')) + '&csrf_token=' + encodeURIComponent(csrf)
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.ok) return;
+                    const received = Number(data.receipt_status) === 1;
+                    btn.classList.toggle('badge-receipt-received', received);
+                    btn.classList.toggle('badge-receipt-missing', !received);
+                    btn.querySelector('.receipt-icon').className = 'bi receipt-icon ' + (received ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill');
+                    btn.querySelector('.receipt-label').textContent = received ? 'تم الاستلام' : 'لم يستلم';
+                })
+                .catch(function () { /* يبقى العرض كما هو */ })
+                .finally(function () { btn.disabled = false; });
+        });
+    });
 })();

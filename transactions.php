@@ -183,6 +183,7 @@ require BASE_PATH . '/includes/layout/header.php';
                             <th>المبلغ</th>
                             <th>الملاحظات</th>
                             <th>المستخدم</th>
+                            <th>الإيصال</th>
                             <?php if (can_edit()): ?><th class="text-center">إجراءات</th><?php endif; ?>
                         </tr>
                     </thead>
@@ -206,6 +207,26 @@ require BASE_PATH . '/includes/layout/header.php';
                                 </td>
                                 <td data-label="الملاحظات"><?= e($t['notes']) ?: '-' ?></td>
                                 <td data-label="المستخدم"><?= e($t['user_name']) ?></td>
+                                <td data-label="الإيصال">
+                                    <?php
+                                    $received = (int)$t['receipt_status'] === 1;
+                                    $badgeClass = 'badge-receipt ' . ($received ? 'badge-receipt-received' : 'badge-receipt-missing');
+                                    $icon  = $received ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill';
+                                    $label = $received ? 'تم الاستلام' : 'لم يستلم';
+                                    ?>
+                                    <?php if (can_toggle_receipt()): ?>
+                                        <button type="button" class="<?= $badgeClass ?>"
+                                                data-receipt-toggle data-tx-id="<?= $t['id'] ?>">
+                                            <i class="bi receipt-icon <?= $icon ?>"></i>
+                                            <span class="receipt-label"><?= $label ?></span>
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="<?= $badgeClass ?>">
+                                            <i class="bi receipt-icon <?= $icon ?>"></i>
+                                            <span class="receipt-label"><?= $label ?></span>
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <?php if (can_edit()): ?>
                                     <td data-label="إجراءات" class="text-center">
                                         <div class="d-inline-flex gap-1">

@@ -172,6 +172,26 @@ body {
 .amount-income  { color: var(--income); font-weight: 700; }
 .amount-expense { color: var(--expense); font-weight: 700; }
 
+/* علامة استلام الإيصال/الفاتورة */
+.badge-receipt {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .65rem;
+    border-radius: .5rem;
+    border: none;
+    font-size: .78rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+.badge-receipt-received { background: var(--income); color: #fff; }
+.badge-receipt-missing  { background: #fd7e14; color: #fff; }
+button.badge-receipt { cursor: pointer; transition: filter .15s, transform .1s; }
+button.badge-receipt:hover  { filter: brightness(.92); }
+button.badge-receipt:active { transform: scale(.97); }
+button.badge-receipt:disabled { opacity: .6; cursor: progress; }
+
 /* ---------------- تسجيل الدخول والتثبيت ---------------- */
 
 .auth-page {

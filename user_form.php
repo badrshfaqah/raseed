@@ -11,7 +11,7 @@ $errors = [];
 
 $editUser = [
     'name' => '', 'username' => '', 'email' => '', 'phone' => '',
-    'role' => 'user', 'permission' => 'view', 'status' => 1,
+    'role' => 'user', 'permission' => 'view', 'can_toggle_receipt' => 0, 'status' => 1,
 ];
 
 if ($isEdit) {
@@ -31,9 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'username'   => trim($_POST['username'] ?? ''),
         'email'      => trim($_POST['email'] ?? ''),
         'phone'      => trim($_POST['phone'] ?? ''),
-        'role'       => ($_POST['role'] ?? 'user') === 'admin' ? 'admin' : 'user',
-        'permission' => ($_POST['permission'] ?? 'view') === 'entry' ? 'entry' : 'view',
-        'status'     => (int)($_POST['status'] ?? 1) === 1 ? 1 : 0,
+        'role'               => ($_POST['role'] ?? 'user') === 'admin' ? 'admin' : 'user',
+        'permission'         => ($_POST['permission'] ?? 'view') === 'entry' ? 'entry' : 'view',
+        'can_toggle_receipt' => !empty($_POST['can_toggle_receipt']) ? 1 : 0,
+        'status'             => (int)($_POST['status'] ?? 1) === 1 ? 1 : 0,
     ]);
     $password = (string)($_POST['password'] ?? '');
     $confirm  = (string)($_POST['confirm'] ?? '');
@@ -64,19 +65,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         try {
             if ($isEdit) {
-                q('UPDATE users SET name = ?, username = ?, email = ?, phone = ?, role = ?, permission = ?, status = ?
+                q('UPDATE users SET name = ?, username = ?, email = ?, phone = ?, role = ?, permission = ?,
+                   can_toggle_receipt = ?, status = ?
                    WHERE id = ?',
                   [$editUser['name'], $editUser['username'], $editUser['email'] ?: null, $editUser['phone'] ?: null,
-                   $editUser['role'], $editUser['permission'], $editUser['status'], $id]);
+                   $editUser['role'], $editUser['permission'], $editUser['can_toggle_receipt'], $editUser['status'], $id]);
                 if ($password !== '') {
                     q('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $id]);
                 }
                 flash('success', 'تم تحديث بيانات المستخدم بنجاح.');
             } else {
-                q('INSERT INTO users (name, username, password_hash, email, phone, role, permission, status)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                q('INSERT INTO users (name, username, password_hash, email, phone, role, permission, can_toggle_receipt, status)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                   [$editUser['name'], $editUser['username'], password_hash($password, PASSWORD_DEFAULT),
-                   $editUser['email'] ?: null, $editUser['phone'] ?: null, $editUser['role'], $editUser['permission'], $editUser['status']]);
+                   $editUser['email'] ?: null, $editUser['phone'] ?: null, $editUser['role'], $editUser['permission'],
+                   $editUser['can_toggle_receipt'], $editUser['status']]);
                 flash('success', 'تم إنشاء المستخدم بنجاح.');
             }
             redirect(APP_URL . 'users.php');
@@ -152,6 +155,17 @@ require BASE_PATH . '/includes/layout/header.php';
                                 <option value="0" <?= (int)$editUser['status'] === 0 ? 'selected' : '' ?>>موقوف</option>
                             </select>
                         </div>
+                        <div class="col-md-6" id="receiptPermWrap">
+                            <label class="form-label">تحديد حالة استلام الإيصال/الفاتورة</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="canToggleReceipt" name="can_toggle_receipt" value="1"
+                                       <?= !empty($editUser['can_toggle_receipt']) ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="canToggleReceipt">
+                                    مسموح لهذا المستخدم بتحديد علامة "تم استلام / لم يستلم" رغم أن صلاحيته مشاهدة فقط
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-flex gap-2 mt-4">
@@ -178,6 +192,17 @@ function syncPermission() {
 }
 roleSelect.addEventListener('change', syncPermission);
 syncPermission();
+
+// صلاحية تحديد استلام الإيصال معناها فقط لعضوية "مشاهدة فقط"
+// (المدير وصلاحية الإدخال يملكونها دائماً بلا حاجة لتفعيل)
+const receiptWrap = document.getElementById('receiptPermWrap');
+function syncReceiptPerm() {
+    const relevant = roleSelect.value !== 'admin' && permissionSelect.value === 'view';
+    receiptWrap.style.display = relevant ? '' : 'none';
+}
+roleSelect.addEventListener('change', syncReceiptPerm);
+permissionSelect.addEventListener('change', syncReceiptPerm);
+syncReceiptPerm();
 </script>
 HTML;
 require BASE_PATH . '/includes/layout/footer.php';

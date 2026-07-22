@@ -29,7 +29,7 @@ function nav_link(string $href, string $icon, string $label, string $current): s
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="<?= APP_URL ?>assets/css/style.css?v=<?= RASEED_VERSION ?>" rel="stylesheet">
 </head>
-<body data-app-url="<?= APP_URL ?>">
+<body data-app-url="<?= APP_URL ?>" data-csrf="<?= csrf_token() ?>">
 
 <div class="layout">
 

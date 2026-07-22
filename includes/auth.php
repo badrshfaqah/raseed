@@ -40,6 +40,17 @@ function can_edit(): bool
     return is_admin();
 }
 
+/**
+ * هل يستطيع المستخدم تحديد حالة استلام الإيصال/الفاتورة على العملية؟
+ * مدير النظام وصلاحية الإدخال يملكونها دائماً، وعضوية المشاهدة تحتاج
+ * منحاً صريحاً من المدير عبر عمود can_toggle_receipt.
+ */
+function can_toggle_receipt(): bool
+{
+    $u = current_user();
+    return $u && ($u['role'] === 'admin' || $u['permission'] === 'entry' || !empty($u['can_toggle_receipt']));
+}
+
 /** إلزام تسجيل الدخول */
 function require_login(): void
 {

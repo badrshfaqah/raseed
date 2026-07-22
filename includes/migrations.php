@@ -10,7 +10,7 @@
 defined('RASEED') || defined('RASEED_INSTALLER') || exit;
 
 /** إصدار بنية قاعدة البيانات المطلوب لهذا الكود */
-const RASEED_DB_VERSION = 2;
+const RASEED_DB_VERSION = 3;
 
 /**
  * سجل الترقيات: المفتاح = رقم الإصدار، القيمة = مصفوفة جمل SQL
@@ -44,6 +44,12 @@ function raseed_migrations(): array
                 ADD COLUMN tag_id INT UNSIGNED DEFAULT NULL AFTER item_id,
                 ADD KEY idx_tx_tag (tag_id),
                 ADD CONSTRAINT fk_tx_tag FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE SET NULL",
+        ],
+
+        // الإصدار 3: علامة استلام الإيصال/الفاتورة على العملية + صلاحية تحديدها لعضوية المشاهد
+        3 => [
+            "ALTER TABLE transactions ADD COLUMN receipt_status TINYINT(1) NOT NULL DEFAULT 0 AFTER notes",
+            "ALTER TABLE users ADD COLUMN can_toggle_receipt TINYINT(1) NOT NULL DEFAULT 0 AFTER permission",
         ],
     ];
 }
