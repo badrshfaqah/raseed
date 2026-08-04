@@ -61,6 +61,23 @@ function redirect(string $to): never
     exit;
 }
 
+/**
+ * الرابط المطلق لجذر التطبيق (يُستخدم في روابط البريد كإعادة تعيين كلمة المرور).
+ * يُفضَّل الإعداد site_url إن ضبطه المدير، لأن ترويسة Host قابلة للتزوير
+ * (Host Header Poisoning) وقد تُستغل لحقن رابط خبيث في بريد الاستعادة.
+ * عند غياب الإعداد نبني الرابط من المضيف الحالي كحل احتياطي.
+ */
+function app_base_url(): string
+{
+    $configured = setting('site_url', '');
+    if ($configured !== '') {
+        return rtrim($configured, '/') . '/';
+    }
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    return $scheme . '://' . $host . APP_URL;
+}
+
 /* ---------------- حماية CSRF ---------------- */
 
 function csrf_token(): string

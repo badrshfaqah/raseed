@@ -105,6 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
         </form>
 
+        <div class="text-center mt-3">
+            <a href="<?= APP_URL ?>forgot_password.php" class="text-decoration-none small">
+                <i class="bi bi-key"></i> نسيت كلمة المرور؟
+            </a>
+        </div>
+
         <div class="auth-footer">
             تطوير <a href="https://almgrat.com" target="_blank" rel="noopener">برمجة المجرات</a>
         </div>

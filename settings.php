@@ -25,6 +25,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(APP_URL . 'settings.php');
     }
 
+    if ($action === 'mail') {
+        $siteUrl = trim($_POST['site_url'] ?? '');
+        if ($siteUrl !== '' && !preg_match('#^https?://#i', $siteUrl)) {
+            $siteUrl = 'https://' . $siteUrl;
+        }
+        if ($siteUrl !== '' && !filter_var($siteUrl, FILTER_VALIDATE_URL)) {
+            flash('danger', 'رابط الموقع غير صحيح.');
+            redirect(APP_URL . 'settings.php#mail');
+        }
+        $mailFrom = trim($_POST['mail_from'] ?? '');
+        if ($mailFrom !== '' && !filter_var($mailFrom, FILTER_VALIDATE_EMAIL)) {
+            flash('danger', 'بريد المُرسِل غير صحيح.');
+            redirect(APP_URL . 'settings.php#mail');
+        }
+        set_setting('site_url', $siteUrl);
+        set_setting('mail_from', $mailFrom);
+        set_setting('mail_from_name', trim($_POST['mail_from_name'] ?? ''));
+        flash('success', 'تم حفظ إعدادات البريد بنجاح.');
+        redirect(APP_URL . 'settings.php#mail');
+    }
+
     if ($action === 'sheets') {
         $serviceAccount = trim($_POST['google_service_account'] ?? '');
         if ($serviceAccount !== '' && json_decode($serviceAccount, true) === null) {
@@ -145,6 +166,47 @@ require BASE_PATH . '/includes/layout/header.php';
                         <i class="bi bi-plug"></i> اختبار الاتصال وتجهيز ورقة العمل
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- إعدادات البريد واستعادة كلمة المرور -->
+    <div class="col-12 col-lg-6" id="mail">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-envelope-at"></i> إعدادات البريد (استعادة كلمة المرور)</div>
+            <div class="card-body">
+                <form method="post">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="mail">
+                    <div class="mb-3">
+                        <label class="form-label">رابط الموقع (Site URL)</label>
+                        <input type="text" class="form-control" name="site_url" dir="ltr"
+                               value="<?= e(setting('site_url')) ?>"
+                               placeholder="https://domain.com/raseed">
+                        <div class="form-text">
+                            يُستخدم لبناء رابط إعادة التعيين في البريد. ضبطه يحمي من تزوير ترويسة المضيف
+                            (Host Header). اتركه فارغاً ليُبنى تلقائياً من عنوان الطلب.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">بريد المُرسِل (From)</label>
+                        <input type="email" class="form-control" name="mail_from" dir="ltr"
+                               value="<?= e(setting('mail_from')) ?>" placeholder="no-reply@domain.com">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">اسم المُرسِل الظاهر</label>
+                        <input type="text" class="form-control" name="mail_from_name"
+                               value="<?= e(setting('mail_from_name')) ?>"
+                               placeholder="<?= e(setting('system_name', 'رصيد')) ?>">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i> حفظ إعدادات البريد
+                    </button>
+                </form>
+                <p class="text-muted small mt-3 mb-0">
+                    يعتمد الإرسال على دالة البريد في PHP، وهي مفعّلة على أغلب استضافات الويب.
+                    إن لم تصل الرسائل، تأكّد من إعداد البريد لدى مزوّد الاستضافة.
+                </p>
             </div>
         </div>
     </div>
