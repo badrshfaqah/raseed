@@ -67,6 +67,7 @@ function nav_link(string $href, string $icon, string $label, string $current): s
                 <?= nav_link('sync_log.php', 'bi-arrow-repeat', 'سجل المزامنة', $currentPage) ?>
                 <?= nav_link('backup.php', 'bi-database-down', 'النسخ الاحتياطي', $currentPage) ?>
                 <?= nav_link('settings.php', 'bi-gear', 'الإعدادات', $currentPage) ?>
+                <?= nav_link('update.php', 'bi-cloud-arrow-down', 'تحديث البرنامج', $currentPage) ?>
                 <?php if (function_exists('needs_upgrade') && needs_upgrade()): ?>
                     <?= nav_link('upgrade.php', 'bi-arrow-up-circle', 'ترقية النظام', $currentPage) ?>
                 <?php endif; ?>
