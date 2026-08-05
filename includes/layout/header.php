@@ -54,6 +54,7 @@ function nav_link(string $href, string $icon, string $label, string $current): s
                 <a class="nav-item-link<?= $expenseActive ?>" href="<?= APP_URL ?>transaction_add.php?type=expense"><i class="bi bi-arrow-up-circle"></i><span>إضافة مصروف</span></a>
             <?php endif; ?>
             <?= nav_link('transactions.php', 'bi-journal-text', 'كشف الحساب', $currentPage) ?>
+            <?= nav_link('assets.php', 'bi-box-seam', 'الأصول', $currentPage) ?>
             <?= nav_link('statistics.php', 'bi-bar-chart-line', 'الإحصائيات', $currentPage) ?>
 
             <?php if (is_admin()): ?>

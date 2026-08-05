@@ -72,6 +72,16 @@
         }
     });
 
+    /* إظهار/إخفاء حقل بيانات الأصل حسب خانة "تسجيل كأصل" */
+    document.querySelectorAll('[data-asset-toggle]').forEach(function (chk) {
+        const block = chk.closest('.asset-block');
+        const field = block && block.querySelector('[data-asset-field]');
+        if (!field) return;
+        function sync() { field.classList.toggle('d-none', !chk.checked); }
+        chk.addEventListener('change', sync);
+        sync();
+    });
+
     /* تبديل حالة استلام الإيصال/الفاتورة على العملية */
     const appUrl = document.body.getAttribute('data-app-url') || './';
     const csrf   = document.body.getAttribute('data-csrf') || '';

@@ -62,8 +62,9 @@ function raseed_schema(): array
             trans_date DATE NOT NULL,
             category_id INT UNSIGNED NOT NULL,
             item_id INT UNSIGNED NOT NULL,
-            tag_id INT UNSIGNED DEFAULT NULL,
             amount DECIMAL(14,2) NOT NULL,
+            is_asset TINYINT(1) NOT NULL DEFAULT 0,
+            asset_name VARCHAR(150) DEFAULT NULL,
             notes TEXT DEFAULT NULL,
             receipt_status TINYINT(1) NOT NULL DEFAULT 0,
             user_id INT UNSIGNED NOT NULL,
@@ -74,13 +75,21 @@ function raseed_schema(): array
             KEY idx_tx_type (type),
             KEY idx_tx_category (category_id),
             KEY idx_tx_item (item_id),
-            KEY idx_tx_tag (tag_id),
+            KEY idx_tx_asset (is_asset),
             KEY idx_tx_user (user_id),
             KEY idx_tx_created (created_at),
             CONSTRAINT fk_tx_category FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE RESTRICT,
             CONSTRAINT fk_tx_item FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE RESTRICT,
-            CONSTRAINT fk_tx_tag FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE SET NULL,
             CONSTRAINT fk_tx_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+        "CREATE TABLE IF NOT EXISTS transaction_tags (
+            transaction_id INT UNSIGNED NOT NULL,
+            tag_id INT UNSIGNED NOT NULL,
+            PRIMARY KEY (transaction_id, tag_id),
+            KEY idx_tt_tag (tag_id),
+            CONSTRAINT fk_tt_tx  FOREIGN KEY (transaction_id) REFERENCES transactions (id) ON DELETE CASCADE,
+            CONSTRAINT fk_tt_tag FOREIGN KEY (tag_id)         REFERENCES tags (id)         ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
         "CREATE TABLE IF NOT EXISTS google_sheet_sync_logs (

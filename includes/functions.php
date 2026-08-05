@@ -236,26 +236,87 @@ function build_tx_filters(array $in): array
         $bind[]  = (int)$in['item_id'];
     }
     if (!empty($in['tag_id']) && ctype_digit((string)$in['tag_id'])) {
-        $where[] = 't.tag_id = ?';
+        // العملية موسومة بهذا التاق ضمن جدول الربط (تاق متعدد)
+        $where[] = 'EXISTS (SELECT 1 FROM transaction_tags jt WHERE jt.transaction_id = t.id AND jt.tag_id = ?)';
         $bind[]  = (int)$in['tag_id'];
     }
+    if (!empty($in['is_asset'])) {
+        $where[] = 't.is_asset = 1';
+    }
     if (!empty($in['search'])) {
-        $where[] = '(t.notes LIKE ? OR i.name LIKE ? OR c.name LIKE ? OR tg.name LIKE ?)';
+        $where[] = '(t.notes LIKE ? OR t.asset_name LIKE ? OR i.name LIKE ? OR c.name LIKE ?
+                     OR EXISTS (SELECT 1 FROM transaction_tags jt JOIN tags tg ON tg.id = jt.tag_id
+                                WHERE jt.transaction_id = t.id AND tg.name LIKE ?))';
         $like    = '%' . $in['search'] . '%';
-        array_push($bind, $like, $like, $like, $like);
+        array_push($bind, $like, $like, $like, $like, $like);
     }
 
     return [$where ? 'WHERE ' . implode(' AND ', $where) : '', $bind];
 }
 
-/** جملة SELECT الأساسية لكشف الحساب (التاق اختياري عبر LEFT JOIN) */
+/** جملة SELECT الأساسية لكشف الحساب (التاقات عبر جدول ربط منفصل) */
 function tx_base_query(): string
 {
     return 'FROM transactions t
             JOIN categories c ON c.id = t.category_id
             JOIN items i      ON i.id = t.item_id
-            JOIN users u      ON u.id = t.user_id
-            LEFT JOIN tags tg ON tg.id = t.tag_id';
+            JOIN users u      ON u.id = t.user_id';
+}
+
+/**
+ * تعبير فرعي يجمع أسماء تاقات العملية في نص واحد مفصول بفواصل.
+ * يُضاف إلى قوائم SELECT هكذا: ', ' . tx_tags_subquery() . ' AS tag_names'
+ */
+function tx_tags_subquery(): string
+{
+    return "(SELECT GROUP_CONCAT(tg.name ORDER BY tg.name SEPARATOR '، ')
+             FROM transaction_tags jt JOIN tags tg ON tg.id = jt.tag_id
+             WHERE jt.transaction_id = t.id)";
+}
+
+/** معرّفات تاقات عملية معيّنة (مصفوفة أرقام) */
+function tx_tag_ids(int $txId): array
+{
+    if ($txId <= 0) {
+        return [];
+    }
+    return array_map('intval', q(
+        'SELECT tag_id FROM transaction_tags WHERE transaction_id = ?',
+        [$txId]
+    )->fetchAll(PDO::FETCH_COLUMN));
+}
+
+/**
+ * مزامنة تاقات عملية مع مجموعة معرّفات جديدة (يستبدل القائمة بالكامل).
+ * يتحقق من صلاحية كل تاق، ويعيد true إذا تغيّرت المجموعة فعلاً.
+ */
+function set_tx_tags(int $txId, array $tagIds, array $validTagIds): bool
+{
+    // تنقية وتوحيد المدخلات على المعرّفات الصالحة فقط
+    $clean = [];
+    foreach ($tagIds as $tid) {
+        $tid = (int)$tid;
+        if ($tid > 0 && in_array($tid, $validTagIds, true)) {
+            $clean[$tid] = true;
+        }
+    }
+    $new = array_keys($clean);
+    sort($new);
+
+    $current = tx_tag_ids($txId);
+    sort($current);
+    if ($new === $current) {
+        return false; // لا تغيير
+    }
+
+    q('DELETE FROM transaction_tags WHERE transaction_id = ?', [$txId]);
+    if ($new) {
+        $ins = db()->prepare('INSERT INTO transaction_tags (transaction_id, tag_id) VALUES (?, ?)');
+        foreach ($new as $tid) {
+            $ins->execute([$txId, $tid]);
+        }
+    }
+    return true;
 }
 
 /** إجماليات (إيرادات، مصروفات، رصيد) وفق الفلاتر */

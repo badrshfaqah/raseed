@@ -71,7 +71,8 @@ class GoogleSheets
 
     private static function txRow(int $id): ?array
     {
-        $t = q('SELECT t.*, c.name AS category_name, i.name AS item_name, tg.name AS tag_name, u.name AS user_name
+        $t = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS user_name,
+                ' . tx_tags_subquery() . ' AS tag_names
                 ' . tx_base_query() . ' WHERE t.id = ?', [$id])->fetch();
         if (!$t) {
             return null;
@@ -82,7 +83,7 @@ class GoogleSheets
             type_label($t['type']),
             $t['category_name'],
             $t['item_name'],
-            (string)$t['tag_name'],
+            (string)$t['tag_names'],
             (float)$t['amount'],
             (string)$t['notes'],
             $t['user_name'],

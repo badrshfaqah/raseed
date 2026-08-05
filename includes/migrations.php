@@ -10,7 +10,7 @@
 defined('RASEED') || defined('RASEED_INSTALLER') || exit;
 
 /** إصدار بنية قاعدة البيانات المطلوب لهذا الكود */
-const RASEED_DB_VERSION = 4;
+const RASEED_DB_VERSION = 5;
 
 /**
  * سجل الترقيات: المفتاح = رقم الإصدار، القيمة = مصفوفة جمل SQL
@@ -66,6 +66,29 @@ function raseed_migrations(): array
                 KEY idx_pr_user (user_id),
                 CONSTRAINT fk_pr_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
+
+        // الإصدار 5: تاق متعدد لكل عملية (جدول ربط) + تمييز المصروف كأصل
+        5 => [
+            // جدول الربط بين العمليات والتاقات (علاقة متعدّد-إلى-متعدّد)
+            "CREATE TABLE IF NOT EXISTS transaction_tags (
+                transaction_id INT UNSIGNED NOT NULL,
+                tag_id INT UNSIGNED NOT NULL,
+                PRIMARY KEY (transaction_id, tag_id),
+                KEY idx_tt_tag (tag_id),
+                CONSTRAINT fk_tt_tx  FOREIGN KEY (transaction_id) REFERENCES transactions (id) ON DELETE CASCADE,
+                CONSTRAINT fk_tt_tag FOREIGN KEY (tag_id)         REFERENCES tags (id)         ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            // ترحيل التاقات الحالية (عمود tag_id المفرد) إلى جدول الربط
+            "INSERT IGNORE INTO transaction_tags (transaction_id, tag_id)
+                SELECT id, tag_id FROM transactions WHERE tag_id IS NOT NULL",
+            // إسقاط العمود المفرد بعد الترحيل (يُسقط قيده ومفتاحه)
+            "ALTER TABLE transactions DROP FOREIGN KEY fk_tx_tag",
+            "ALTER TABLE transactions DROP COLUMN tag_id",
+            // تمييز المصروف كأصل مع حقل اختياري لبيانات الأصل
+            "ALTER TABLE transactions ADD COLUMN is_asset TINYINT(1) NOT NULL DEFAULT 0 AFTER amount",
+            "ALTER TABLE transactions ADD COLUMN asset_name VARCHAR(150) DEFAULT NULL AFTER is_asset",
+            "ALTER TABLE transactions ADD KEY idx_tx_asset (is_asset)",
         ],
     ];
 }

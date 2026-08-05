@@ -45,10 +45,11 @@ $byTag = q("SELECT tg.name,
                    COALESCE(SUM(CASE WHEN t.type = 'income'  THEN t.amount END), 0) AS income,
                    COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount END), 0) AS expense,
                    COUNT(*) AS tx_count
-            FROM transactions t
-            JOIN tags tg ON tg.id = t.tag_id
+            FROM tags tg
+            JOIN transaction_tags jt ON jt.tag_id = tg.id
+            JOIN transactions t      ON t.id = jt.transaction_id
             WHERE t.trans_date BETWEEN ? AND ?
-            GROUP BY t.tag_id, tg.name
+            GROUP BY tg.id, tg.name
             ORDER BY SUM(t.amount) DESC LIMIT 20", $bind)->fetchAll();
 
 $chartMonths  = array_column($monthly, 'month');

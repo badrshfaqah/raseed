@@ -23,7 +23,7 @@ const IMPORT_COLUMNS  = ['التاريخ', 'النوع', 'التصنيف', 'ال
 if (($_GET['action'] ?? '') === 'template') {
     $example = [
         ['2026-01-15', 'إيراد', 'إيرادات', 'دفعة مشروع', 5000, 'دفعة أولى', 'مشروع الرياض'],
-        ['2026-01-16', 'مصروف', 'ضيافة', 'قهوة', 120, 'اجتماع', 'مشروع الرياض'],
+        ['2026-01-16', 'مصروف', 'ضيافة', 'قهوة', 120, 'اجتماع', 'مشروع الرياض، الموظف أحمد'],
         ['2026-01-16', 'مصروف', 'نقل', 'وقود', 200, '', ''],
     ];
     Xlsx::download('raseed-import-template', IMPORT_COLUMNS, $example);
@@ -47,6 +47,21 @@ function is_empty_row(array $row): bool
         }
     }
     return true;
+}
+
+/** تفكيك خلية التاقات إلى أسماء (يفصلها ، أو ؛ أو , أو ;) مع إزالة التكرار */
+function parse_tag_names(string $cell): array
+{
+    $parts = preg_split('/[،؛,;]+/u', $cell) ?: [];
+    $out   = [];
+    foreach ($parts as $p) {
+        $name = trim($p);
+        if ($name === '') {
+            continue;
+        }
+        $out[mb_strtolower($name)] = $name; // إزالة التكرار مع الإبقاء على أول صياغة
+    }
+    return array_values($out);
 }
 
 /**
@@ -92,7 +107,8 @@ function build_preview(array $rows): array
         $itemName = trim($raw[3] ?? '');
         $amountRaw = str_replace([',', ' '], '', trim($raw[4] ?? ''));
         $notes   = trim($raw[5] ?? '');
-        $tagName = trim($raw[6] ?? '');
+        $tagCell = trim($raw[6] ?? '');
+        $tagNames = parse_tag_names($tagCell);
 
         $rowErrors = [];
         $date = XlsxReader::normalizeDate($dateRaw);
@@ -118,8 +134,11 @@ function build_preview(array $rows): array
         if (mb_strlen($notes) > 1000) {
             $rowErrors[] = 'الملاحظات طويلة جداً';
         }
-        if (mb_strlen($tagName) > 100) {
-            $rowErrors[] = 'اسم التاق طويل جداً';
+        foreach ($tagNames as $tn) {
+            if (mb_strlen($tn) > 100) {
+                $rowErrors[] = 'أحد أسماء التاقات طويل جداً';
+                break;
+            }
         }
 
         $ok = !$rowErrors;
@@ -134,15 +153,15 @@ function build_preview(array $rows): array
             if (!isset($existingItems[$itemKey]) && !isset($newItems[$itemKey])) {
                 $newItems[$itemKey] = $catName . ' ← ' . $itemName;
             }
-            if ($tagName !== '') {
-                $tagKey = mb_strtolower($tagName);
+            foreach ($tagNames as $tn) {
+                $tagKey = mb_strtolower($tn);
                 if (!isset($existingTags[$tagKey]) && !isset($newTags[$tagKey])) {
-                    $newTags[$tagKey] = $tagName;
+                    $newTags[$tagKey] = $tn;
                 }
             }
             $valid[] = [
                 'date' => $date, 'type' => $type, 'category' => $catName,
-                'item' => $itemName, 'amount' => $amount, 'notes' => $notes, 'tag' => $tagName,
+                'item' => $itemName, 'amount' => $amount, 'notes' => $notes, 'tags' => $tagNames,
             ];
         } else {
             $errors++;
@@ -151,7 +170,7 @@ function build_preview(array $rows): array
         $preview[] = [
             'row' => $rowNum, 'date' => $dateRaw, 'type' => $typeRaw,
             'category' => $catName, 'item' => $itemName, 'amount' => $amountRaw,
-            'notes' => $notes, 'tag' => $tagName, 'ok' => $ok, 'error' => implode('، ', $rowErrors),
+            'notes' => $notes, 'tag' => implode('، ', $tagNames), 'ok' => $ok, 'error' => implode('، ', $rowErrors),
         ];
     }
 
@@ -177,19 +196,23 @@ function run_import(array $validRows): array
     db()->beginTransaction();
     try {
         $insertTx = db()->prepare(
-            'INSERT INTO transactions (type, trans_date, category_id, item_id, tag_id, amount, notes, user_id, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            'INSERT INTO transactions (type, trans_date, category_id, item_id, amount, notes, user_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
         );
+        $insertTag = db()->prepare('INSERT IGNORE INTO transaction_tags (transaction_id, tag_id) VALUES (?, ?)');
         foreach ($validRows as $r) {
             $catId  = resolve_category($r['category'], $catCache);
             $itemId = resolve_item($catId, $r['item'], $itemCache);
-            $tagId  = !empty($r['tag']) ? resolve_tag($r['tag'], $tagCache) : null;
             $insertTx->execute([
-                $r['type'], $r['date'], $catId, $itemId, $tagId,
+                $r['type'], $r['date'], $catId, $itemId,
                 $r['amount'], $r['notes'] !== '' ? $r['notes'] : null,
                 current_user()['id'],
             ]);
-            $insertedIds[] = (int) db()->lastInsertId();
+            $txId = (int) db()->lastInsertId();
+            $insertedIds[] = $txId;
+            foreach (($r['tags'] ?? []) as $tagName) {
+                $insertTag->execute([$txId, resolve_tag($tagName, $tagCache)]);
+            }
         }
         db()->commit();
     } catch (Throwable $e) {
@@ -358,7 +381,7 @@ require BASE_PATH . '/includes/layout/header.php';
                         <li><span>البند</span><span class="text-muted">يُنشأ تلقائياً إن كان جديداً</span></li>
                         <li><span>المبلغ</span><span class="text-muted">رقم أكبر من صفر</span></li>
                         <li><span>الملاحظات</span><span class="text-muted">اختياري</span></li>
-                        <li><span>التاق</span><span class="text-muted">اختياري - يُنشأ تلقائياً</span></li>
+                        <li><span>التاق</span><span class="text-muted">اختياري - عدة تاقات تُفصل بفاصلة ،</span></li>
                     </ul>
                 </div>
             </div>

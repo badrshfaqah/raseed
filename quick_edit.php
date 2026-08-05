@@ -26,10 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
     foreach (q('SELECT id, category_id FROM items')->fetchAll() as $r) {
         $catItems[(int)$r['id']] = (int)$r['category_id'];
     }
-    $validTags = [];
-    foreach (q('SELECT id FROM tags')->fetchAll() as $r) {
-        $validTags[(int)$r['id']] = true;
-    }
+    $validTagIds = array_map('intval', q('SELECT id FROM tags')->fetchAll(PDO::FETCH_COLUMN));
 
     $syncUpdate = [];
     $syncDelete = [];
@@ -59,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
             $transDate  = trim($in['trans_date'] ?? '');
             $categoryId = (int)($in['category_id'] ?? 0);
             $itemId     = (int)($in['item_id'] ?? 0);
-            $tagId      = (int)($in['tag_id'] ?? 0);
+            $tagIds     = array_map('intval', (array)($in['tag_ids'] ?? []));
             $amount     = (float)str_replace(',', '', (string)($in['amount'] ?? '0'));
             $notes      = trim($in['notes'] ?? '');
 
@@ -79,31 +76,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
             if ($itemId <= 0 || !isset($catItems[$itemId]) || $catItems[$itemId] !== $categoryId) {
                 $rowErr[] = 'التصنيف والبند غير متطابقين';
             }
-            if ($tagId > 0 && !isset($validTags[$tagId])) {
-                $rowErr[] = 'التاق غير صالح';
+            foreach ($tagIds as $tid) {
+                if ($tid > 0 && !in_array($tid, $validTagIds, true)) {
+                    $rowErr[] = 'أحد التاقات غير صالح';
+                    break;
+                }
             }
             if ($rowErr) {
                 $errors[] = 'العملية #' . $id . ': ' . implode('، ', $rowErr);
                 continue;
             }
 
-            // هل تغيّر شيء فعلاً؟
-            $changed = $type !== $current['type']
+            // هل تغيّرت الحقول العادية؟
+            $fieldsChanged = $type !== $current['type']
                 || $transDate !== $current['trans_date']
                 || $categoryId !== (int)$current['category_id']
                 || $itemId !== (int)$current['item_id']
-                || (int)$tagId !== (int)$current['tag_id']
                 || (float)$amount !== (float)$current['amount']
                 || $notes !== (string)$current['notes'];
 
-            if (!$changed) {
+            if ($fieldsChanged) {
+                q('UPDATE transactions SET type = ?, trans_date = ?, category_id = ?, item_id = ?, amount = ?, notes = ?
+                   WHERE id = ?',
+                  [$type, $transDate, $categoryId, $itemId, $amount, $notes ?: null, $id]);
+            }
+            // مزامنة التاقات (تعيد true إذا تغيّرت المجموعة فعلاً)
+            $tagsChanged = set_tx_tags($id, $tagIds, $validTagIds);
+
+            if (!$fieldsChanged && !$tagsChanged) {
                 $unchanged++;
                 continue;
             }
-
-            q('UPDATE transactions SET type = ?, trans_date = ?, category_id = ?, item_id = ?, tag_id = ?, amount = ?, notes = ?
-               WHERE id = ?',
-              [$type, $transDate, $categoryId, $itemId, $tagId ?: null, $amount, $notes ?: null, $id]);
             $syncUpdate[] = $id;
             $updated++;
         }
@@ -150,11 +153,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
 
 $total = (int)q('SELECT COUNT(*) ' . tx_base_query() . " $whereSql", $bind)->fetchColumn();
 
-$rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, tg.name AS tag_name
+$rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name
            ' . tx_base_query() . "
            $whereSql
            ORDER BY t.trans_date DESC, t.id DESC
            LIMIT " . QE_MAX_ROWS, $bind)->fetchAll();
+
+// تاقات كل عملية معروضة (استعلام واحد) → خريطة: معرّف العملية => [معرّفات التاقات]
+$rowTagMap = [];
+$rowIds    = array_map(static fn($r) => (int)$r['id'], $rows);
+if ($rowIds) {
+    $ph = implode(',', array_fill(0, count($rowIds), '?'));
+    foreach (q("SELECT transaction_id, tag_id FROM transaction_tags WHERE transaction_id IN ($ph)", $rowIds)->fetchAll() as $tt) {
+        $rowTagMap[(int)$tt['transaction_id']][] = (int)$tt['tag_id'];
+    }
+}
 
 $categories = q('SELECT id, name FROM categories WHERE status = 1 ORDER BY name')->fetchAll();
 $allItems   = q('SELECT id, category_id, name FROM items WHERE status = 1 ORDER BY name')->fetchAll();
@@ -292,10 +305,10 @@ require BASE_PATH . '/includes/layout/header.php';
                                         </select>
                                     </td>
                                     <td>
-                                        <select class="form-select form-select-sm" name="rows[<?= $id ?>][tag_id]">
-                                            <option value="">— بدون —</option>
+                                        <?php $rowTags = $rowTagMap[$id] ?? []; ?>
+                                        <select class="form-select form-select-sm" name="rows[<?= $id ?>][tag_ids][]" multiple size="3" title="Ctrl/Cmd لاختيار عدة تاقات">
                                             <?php foreach ($tags as $tg): ?>
-                                                <option value="<?= $tg['id'] ?>" <?= (int)$t['tag_id'] === (int)$tg['id'] ? 'selected' : '' ?>><?= e($tg['name']) ?></option>
+                                                <option value="<?= $tg['id'] ?>" <?= in_array((int)$tg['id'], $rowTags, true) ? 'selected' : '' ?>><?= e($tg['name']) ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </td>

@@ -18,9 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $transDate  = trim($_POST['trans_date'] ?? '');
     $categoryId = (int)($_POST['category_id'] ?? 0);
     $itemId     = (int)($_POST['item_id'] ?? 0);
-    $tagId      = (int)($_POST['tag_id'] ?? 0);
+    $tagIds     = array_map('intval', (array)($_POST['tag_ids'] ?? []));
     $amount     = (float)str_replace(',', '', (string)($_POST['amount'] ?? '0'));
     $notes      = trim($_POST['notes'] ?? '');
+    $isAsset    = ($type === 'expense' && !empty($_POST['is_asset'])) ? 1 : 0;
+    $assetName  = $isAsset ? trim($_POST['asset_name'] ?? '') : '';
 
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $transDate) || !strtotime($transDate)) {
         $errors[] = 'يرجى إدخال تاريخ صحيح.';
@@ -39,6 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (mb_strlen($notes) > 1000) {
         $errors[] = 'الملاحظات يجب ألا تتجاوز 1000 حرف.';
     }
+    if (mb_strlen($assetName) > 150) {
+        $errors[] = 'اسم/تفاصيل الأصل يجب ألا يتجاوز 150 حرفاً.';
+    }
 
     // التحقق من أن البند يتبع التصنيف المختار فعلاً
     if (!$errors) {
@@ -47,20 +52,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'البند المختار لا يتبع هذا التصنيف.';
         }
     }
-    // التاق اختياري؛ إن اختير فيجب أن يكون موجوداً ومفعّلاً
-    if (!$errors && $tagId > 0) {
-        if (!q('SELECT id FROM tags WHERE id = ? AND status = 1', [$tagId])->fetch()) {
-            $errors[] = 'التاق المختار غير صالح.';
+    // التاقات اختيارية؛ نُبقي الصالحة المفعّلة فقط
+    $validTagIds = array_map('intval', q('SELECT id FROM tags WHERE status = 1')->fetchAll(PDO::FETCH_COLUMN));
+    if (!$errors) {
+        foreach ($tagIds as $tid) {
+            if ($tid > 0 && !in_array($tid, $validTagIds, true)) {
+                $errors[] = 'أحد التاقات المختارة غير صالح.';
+                break;
+            }
         }
     }
 
     if (!$errors) {
         try {
             db()->beginTransaction();
-            q('INSERT INTO transactions (type, trans_date, category_id, item_id, tag_id, amount, notes, user_id, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-              [$type, $transDate, $categoryId, $itemId, $tagId ?: null, $amount, $notes ?: null, current_user()['id']]);
+            q('INSERT INTO transactions (type, trans_date, category_id, item_id, amount, is_asset, asset_name, notes, user_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+              [$type, $transDate, $categoryId, $itemId, $amount, $isAsset, $assetName ?: null, $notes ?: null, current_user()['id']]);
             $txId = (int)db()->lastInsertId();
+            set_tx_tags($txId, $tagIds, $validTagIds);
             db()->commit();
 
             // المزامنة مع Google Sheets بعد نجاح الحفظ (فشلها لا يوقف العملية)
@@ -131,16 +141,17 @@ require BASE_PATH . '/includes/layout/header.php';
                         </select>
                     </div>
 
+                    <?php $selectedTags = array_map('intval', (array)($_POST['tag_ids'] ?? [])); ?>
                     <div class="mb-3">
-                        <label class="form-label">التاق <span class="text-muted small">(اختياري)</span></label>
-                        <select class="form-select" name="tag_id">
-                            <option value="">-- بدون تاق --</option>
+                        <label class="form-label">التاقات <span class="text-muted small">(اختياري - يمكن اختيار أكثر من تاق)</span></label>
+                        <select class="form-select" name="tag_ids[]" multiple size="5">
                             <?php foreach ($tags as $tg): ?>
-                                <option value="<?= $tg['id'] ?>" <?= (int)($_POST['tag_id'] ?? 0) === (int)$tg['id'] ? 'selected' : '' ?>>
+                                <option value="<?= $tg['id'] ?>" <?= in_array((int)$tg['id'], $selectedTags, true) ? 'selected' : '' ?>>
                                     <?= e($tg['name']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <div class="form-text">اضغط Ctrl (أو Cmd على ماك) مع النقر لاختيار عدة تاقات، مثل: خشب، مشروع كذا، الموظف فلان.</div>
                     </div>
 
                     <div class="mb-3">
@@ -148,6 +159,24 @@ require BASE_PATH . '/includes/layout/header.php';
                         <input type="number" class="form-control" name="amount" step="0.01" min="0.01"
                                value="<?= e($_POST['amount'] ?? '') ?>" required dir="ltr" placeholder="0.00">
                     </div>
+
+                    <?php if (!$isIncome): ?>
+                    <div class="mb-3 asset-block">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_asset" id="isAsset" value="1"
+                                   data-asset-toggle <?= !empty($_POST['is_asset']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="isAsset">
+                                <i class="bi bi-box-seam"></i> تسجيل هذا المصروف كأصل (يظهر في قسم الأصول)
+                            </label>
+                        </div>
+                        <div class="mt-2 <?= !empty($_POST['is_asset']) ? '' : 'd-none' ?>" data-asset-field>
+                            <label class="form-label">اسم / تفاصيل الأصل</label>
+                            <input type="text" class="form-control" name="asset_name" maxlength="150"
+                                   value="<?= e($_POST['asset_name'] ?? '') ?>"
+                                   placeholder="مثال: كاميرا Canon R5، عدسة 24-70، إضاءة استوديو...">
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <div class="mb-4">
                         <label class="form-label">الملاحظات</label>

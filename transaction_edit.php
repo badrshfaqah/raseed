@@ -23,9 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $transDate  = trim($_POST['trans_date'] ?? '');
     $categoryId = (int)($_POST['category_id'] ?? 0);
     $itemId     = (int)($_POST['item_id'] ?? 0);
-    $tagId      = (int)($_POST['tag_id'] ?? 0);
+    $tagIds     = array_map('intval', (array)($_POST['tag_ids'] ?? []));
     $amount     = (float)str_replace(',', '', (string)($_POST['amount'] ?? '0'));
     $notes      = trim($_POST['notes'] ?? '');
+    $isAsset    = ($type === 'expense' && !empty($_POST['is_asset'])) ? 1 : 0;
+    $assetName  = $isAsset ? trim($_POST['asset_name'] ?? '') : '';
 
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $transDate) || !strtotime($transDate)) {
         $errors[] = 'يرجى إدخال تاريخ صحيح.';
@@ -41,24 +43,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (mb_strlen($notes) > 1000) {
         $errors[] = 'الملاحظات يجب ألا تتجاوز 1000 حرف.';
     }
+    if (mb_strlen($assetName) > 150) {
+        $errors[] = 'اسم/تفاصيل الأصل يجب ألا يتجاوز 150 حرفاً.';
+    }
     if (!$errors) {
         $valid = q('SELECT id FROM items WHERE id = ? AND category_id = ?', [$itemId, $categoryId])->fetch();
         if (!$valid) {
             $errors[] = 'البند المختار لا يتبع هذا التصنيف.';
         }
     }
-    if (!$errors && $tagId > 0) {
-        if (!q('SELECT id FROM tags WHERE id = ?', [$tagId])->fetch()) {
-            $errors[] = 'التاق المختار غير صالح.';
+    // التاقات: نُبقي الصالحة فقط (يُسمح بالموقوفة عند التعديل للحفاظ على الربط القائم)
+    $validTagIds = array_map('intval', q('SELECT id FROM tags')->fetchAll(PDO::FETCH_COLUMN));
+    if (!$errors) {
+        foreach ($tagIds as $tid) {
+            if ($tid > 0 && !in_array($tid, $validTagIds, true)) {
+                $errors[] = 'أحد التاقات المختارة غير صالح.';
+                break;
+            }
         }
     }
 
     if (!$errors) {
         try {
             db()->beginTransaction();
-            q('UPDATE transactions SET type = ?, trans_date = ?, category_id = ?, item_id = ?, tag_id = ?, amount = ?, notes = ?
+            q('UPDATE transactions SET type = ?, trans_date = ?, category_id = ?, item_id = ?, amount = ?, is_asset = ?, asset_name = ?, notes = ?
                WHERE id = ?',
-              [$type, $transDate, $categoryId, $itemId, $tagId ?: null, $amount, $notes ?: null, $id]);
+              [$type, $transDate, $categoryId, $itemId, $amount, $isAsset, $assetName ?: null, $notes ?: null, $id]);
+            set_tx_tags($id, $tagIds, $validTagIds);
             db()->commit();
 
             $synced = GoogleSheets::sync($id, 'update');
@@ -81,12 +92,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // إعادة عرض القيم المرسلة عند وجود أخطاء
     $tx = array_merge($tx, [
         'type' => $type, 'trans_date' => $transDate, 'category_id' => $categoryId,
-        'item_id' => $itemId, 'tag_id' => $tagId, 'amount' => $amount, 'notes' => $notes,
+        'item_id' => $itemId, 'amount' => $amount, 'notes' => $notes,
+        'is_asset' => $isAsset, 'asset_name' => $assetName,
     ]);
 }
 
+// التاقات المختارة حالياً (المرسلة عند الخطأ، وإلا المخزّنة للعملية)
+$currentTagIds = isset($tagIds) ? $tagIds : tx_tag_ids($id);
+
 $categories = q('SELECT id, name FROM categories WHERE status = 1 ORDER BY name')->fetchAll();
-$tags       = q('SELECT id, name FROM tags WHERE status = 1 ORDER BY name')->fetchAll();
+// نعرض كل التاقات (حتى الموقوفة) لأن العملية قد تكون مرتبطة بواحد موقوف
+$tags       = q('SELECT id, name, status FROM tags ORDER BY status DESC, name')->fetchAll();
 
 $pageTitle = 'تعديل عملية #' . $id;
 require BASE_PATH . '/includes/layout/header.php';
@@ -137,22 +153,40 @@ require BASE_PATH . '/includes/layout/header.php';
                         </select>
                     </div>
 
+                    <?php $currentTagIds = array_map('intval', $currentTagIds); ?>
                     <div class="mb-3">
-                        <label class="form-label">التاق <span class="text-muted small">(اختياري)</span></label>
-                        <select class="form-select" name="tag_id">
-                            <option value="">-- بدون تاق --</option>
+                        <label class="form-label">التاقات <span class="text-muted small">(اختياري - يمكن اختيار أكثر من تاق)</span></label>
+                        <select class="form-select" name="tag_ids[]" multiple size="5">
                             <?php foreach ($tags as $tg): ?>
-                                <option value="<?= $tg['id'] ?>" <?= (int)($tx['tag_id'] ?? 0) === (int)$tg['id'] ? 'selected' : '' ?>>
-                                    <?= e($tg['name']) ?>
+                                <option value="<?= $tg['id'] ?>" <?= in_array((int)$tg['id'], $currentTagIds, true) ? 'selected' : '' ?>>
+                                    <?= e($tg['name']) ?><?= (int)$tg['status'] === 0 ? ' (موقوف)' : '' ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <div class="form-text">اضغط Ctrl (أو Cmd على ماك) مع النقر لاختيار عدة تاقات.</div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">المبلغ (<?= e(setting('currency', 'ر.س')) ?>) <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" name="amount" step="0.01" min="0.01"
                                value="<?= e((string)$tx['amount']) ?>" required dir="ltr">
+                    </div>
+
+                    <div class="mb-3 asset-block">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_asset" id="isAsset" value="1"
+                                   data-asset-toggle <?= !empty($tx['is_asset']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="isAsset">
+                                <i class="bi bi-box-seam"></i> تسجيل هذا المصروف كأصل (يظهر في قسم الأصول)
+                            </label>
+                        </div>
+                        <div class="mt-2 <?= !empty($tx['is_asset']) ? '' : 'd-none' ?>" data-asset-field>
+                            <label class="form-label">اسم / تفاصيل الأصل</label>
+                            <input type="text" class="form-control" name="asset_name" maxlength="150"
+                                   value="<?= e((string)($tx['asset_name'] ?? '')) ?>"
+                                   placeholder="مثال: كاميرا Canon R5، عدسة 24-70، إضاءة استوديو...">
+                        </div>
+                        <div class="form-text">تُحفظ خانة الأصل للمصروفات فقط.</div>
                     </div>
 
                     <div class="mb-4">

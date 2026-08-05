@@ -33,9 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             q('UPDATE tags SET status = 1 - status WHERE id = ?', [(int)($_POST['id'] ?? 0)]);
             flash('success', 'تم تغيير حالة التاق.');
         } elseif ($action === 'delete') {
-            // العمليات المرتبطة تبقى، ويصبح تاقها فارغاً (ON DELETE SET NULL)
+            // تُحذف روابط التاق من جدول الربط تلقائياً (ON DELETE CASCADE)، وتبقى العمليات نفسها
             q('DELETE FROM tags WHERE id = ?', [(int)($_POST['id'] ?? 0)]);
-            flash('success', 'تم حذف التاق. العمليات المرتبطة به بقيت بدون تاق.');
+            flash('success', 'تم حذف التاق. العمليات المرتبطة به بقيت، وأُزيل هذا التاق منها فقط.');
         }
     } catch (PDOException $e) {
         if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'Duplicate')) {
@@ -54,7 +54,8 @@ $tags = q("SELECT tg.*,
               COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount END), 0) AS expense,
               COUNT(t.id) AS tx_count
            FROM tags tg
-           LEFT JOIN transactions t ON t.tag_id = tg.id
+           LEFT JOIN transaction_tags jt ON jt.tag_id = tg.id
+           LEFT JOIN transactions t      ON t.id = jt.transaction_id
            GROUP BY tg.id
            ORDER BY tg.name")->fetchAll();
 

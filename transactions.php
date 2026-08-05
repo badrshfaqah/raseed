@@ -16,7 +16,8 @@ $pages   = max(1, (int)ceil($count / $perPage));
 $page    = min($page, $pages);
 $offset  = ($page - 1) * $perPage;
 
-$rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, tg.name AS tag_name, u.name AS user_name
+$rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS user_name,
+           ' . tx_tags_subquery() . ' AS tag_names
            ' . tx_base_query() . "
            $whereSql
            ORDER BY t.trans_date DESC, t.id DESC
@@ -39,6 +40,7 @@ $exportParams = http_build_query(array_filter([
     'category_id' => $_GET['category_id'] ?? '',
     'item_id'     => $_GET['item_id'] ?? '',
     'tag_id'      => $_GET['tag_id'] ?? '',
+    'is_asset'    => !empty($_GET['is_asset']) ? '1' : '',
     'search'      => $_GET['search'] ?? '',
 ]));
 
@@ -103,6 +105,13 @@ require BASE_PATH . '/includes/layout/header.php';
                 <label class="form-label small">بحث</label>
                 <input type="text" class="form-control form-control-sm" name="search"
                        value="<?= e($_GET['search'] ?? '') ?>" placeholder="في الملاحظات والبنود والتاق...">
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" name="is_asset" id="assetFilter" value="1"
+                           <?= !empty($_GET['is_asset']) ? 'checked' : '' ?>>
+                    <label class="form-check-label small" for="assetFilter">الأصول فقط</label>
+                </div>
             </div>
             <div class="col-12 d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> تطبيق الفلترة</button>
@@ -196,10 +205,19 @@ require BASE_PATH . '/includes/layout/header.php';
                                     <span class="badge badge-<?= $t['type'] ?>"><?= type_label($t['type']) ?></span>
                                 </td>
                                 <td data-label="التصنيف"><?= e($t['category_name']) ?></td>
-                                <td data-label="البند"><?= e($t['item_name']) ?></td>
+                                <td data-label="البند">
+                                    <?= e($t['item_name']) ?>
+                                    <?php if (!empty($t['is_asset'])): ?>
+                                        <span class="badge text-bg-warning" title="<?= e((string)($t['asset_name'] ?? '')) ?>">
+                                            <i class="bi bi-box-seam"></i> أصل<?= !empty($t['asset_name']) ? ': ' . e($t['asset_name']) : '' ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td data-label="التاق">
-                                    <?php if ($t['tag_name']): ?>
-                                        <span class="badge text-bg-light border"><?= e($t['tag_name']) ?></span>
+                                    <?php if (!empty($t['tag_names'])): ?>
+                                        <?php foreach (explode('، ', $t['tag_names']) as $tgName): ?>
+                                            <span class="badge text-bg-light border mb-1"><?= e($tgName) ?></span>
+                                        <?php endforeach; ?>
                                     <?php else: ?>-<?php endif; ?>
                                 </td>
                                 <td data-label="المبلغ" class="amount-<?= $t['type'] ?>">
