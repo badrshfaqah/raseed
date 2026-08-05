@@ -7,7 +7,8 @@ require_login();
 
 $totals = tx_totals('', []);
 
-$latest = q('SELECT t.*, c.name AS category_name, i.name AS item_name, tg.name AS tag_name, u.name AS user_name
+$latest = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS user_name,
+             ' . tx_tags_subquery() . ' AS tag_names
              ' . tx_base_query() . '
              ORDER BY t.trans_date DESC, t.id DESC
              LIMIT 10')->fetchAll();
@@ -99,8 +100,10 @@ require BASE_PATH . '/includes/layout/header.php';
                                 <td data-label="التصنيف"><?= e($t['category_name']) ?></td>
                                 <td data-label="البند"><?= e($t['item_name']) ?></td>
                                 <td data-label="التاق">
-                                    <?php if ($t['tag_name']): ?>
-                                        <span class="badge text-bg-light border"><?= e($t['tag_name']) ?></span>
+                                    <?php if (!empty($t['tag_names'])): ?>
+                                        <?php foreach (explode('، ', $t['tag_names']) as $tgName): ?>
+                                            <span class="badge text-bg-light border mb-1"><?= e($tgName) ?></span>
+                                        <?php endforeach; ?>
                                     <?php else: ?>-<?php endif; ?>
                                 </td>
                                 <td data-label="المبلغ" class="amount-<?= $t['type'] ?>">

@@ -97,13 +97,14 @@ class Backup
         $headers = ['#', 'التاريخ', 'النوع', 'التصنيف', 'البند', 'التاق', 'المبلغ', 'الملاحظات', 'المستخدم', 'وقت التسجيل'];
         $rows = [];
         $data = q('SELECT t.id, t.trans_date, t.type, c.name AS category_name, i.name AS item_name,
-                          tg.name AS tag_name, t.amount, t.notes, u.name AS user_name, t.created_at
+                          ' . tx_tags_subquery() . ' AS tag_names,
+                          t.amount, t.notes, u.name AS user_name, t.created_at
                    ' . tx_base_query() . '
                    ORDER BY t.trans_date DESC, t.id DESC')->fetchAll();
         foreach ($data as $r) {
             $rows[] = [
                 (int)$r['id'], $r['trans_date'], type_label($r['type']),
-                $r['category_name'], $r['item_name'], (string)$r['tag_name'],
+                $r['category_name'], $r['item_name'], (string)$r['tag_names'],
                 (float)$r['amount'], (string)$r['notes'], $r['user_name'], $r['created_at'],
             ];
         }
