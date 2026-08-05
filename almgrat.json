@@ -2,7 +2,7 @@
     "name": "رصيد",
     "name_en": "Raseed",
     "slug": "raseed",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "exclude_from_package": [
         "Raseed"
     ],

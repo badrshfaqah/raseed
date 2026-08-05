@@ -27,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(APP_URL . 'update.php');
     }
 
-    if ($action === 'update') {
-        $result = Updater::run();
+    if ($action === 'update' || $action === 'force_update') {
+        $result = Updater::run($action === 'force_update');
         if ($result['ok']) {
             // تحديث الإصدار المخزَّن في الجلسة غير مطلوب؛ الملفات حُدّثت.
             flash('success', $result['message'] . ' سيتم الآن فحص ترقية قاعدة البيانات.');
@@ -116,6 +116,26 @@ require BASE_PATH . '/includes/layout/header.php';
                         <i class="bi bi-arrow-clockwise"></i> إعادة الفحص
                     </a>
                 <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- إعادة رفع الملفات (فرض) -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-arrow-repeat"></i> إعادة رفع الملفات (فرض التحديث)</div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    يسحب هذا الخيار آخر ملفات الفرع من GitHub ويطبّقها <strong>مهما كان رقم الإصدار</strong> —
+                    حتى لو ظهر أن النظام محدَّث. استخدمه إذا نُسي رفع رقم الإصدار مع تعديل جديد، أو للتأكد من
+                    تطابق الملفات مع المستودع. تُؤخذ نسخة احتياطية تلقائية أولاً، وتبقى إعداداتك وبياناتك
+                    ونسخك الاحتياطية سليمة تماماً.
+                </p>
+                <form method="post" data-confirm="سيتم سحب آخر الملفات من GitHub وتطبيقها فوق ملفات البرنامج (مع نسخة احتياطية أولاً)، بصرف النظر عن رقم الإصدار. متابعة؟">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="force_update">
+                    <button type="submit" class="btn btn-outline-warning w-100">
+                        <i class="bi bi-cloud-arrow-down"></i> إعادة رفع الملفات من الفرع «<?= e(Updater::branch()) ?>» الآن
+                    </button>
+                </form>
             </div>
         </div>
 

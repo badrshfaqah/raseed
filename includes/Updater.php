@@ -63,18 +63,24 @@ class Updater
 
     /**
      * تنفيذ التحديث بالكامل.
+     *
+     * @param bool $force عند التفعيل يتجاوز فحص رقم الإصدار ويعيد سحب آخر ملفات
+     *                    الفرع وتطبيقها مهما كان الرقم (مفيد لو نُسي رفع الإصدار).
      * @return array{ok:bool, message:string, from?:string, to?:string}
      */
-    public static function run(): array
+    public static function run(bool $force = false): array
     {
         $localVer  = self::localVersion();
         $remoteVer = self::remoteVersion();
 
-        if ($remoteVer === '') {
-            return ['ok' => false, 'message' => 'تعذّر قراءة إصدار النسخة الأحدث من GitHub. تحقّق من إعدادات المستودع والفرع والاتصال.'];
-        }
-        if (version_compare($remoteVer, $localVer, '<=')) {
-            return ['ok' => false, 'message' => 'النظام محدَّث بالفعل (الإصدار ' . $localVer . ').'];
+        // في الوضع العادي نتحقق من توفّر إصدار أحدث؛ في وضع الفرض نتجاوز ذلك
+        if (!$force) {
+            if ($remoteVer === '') {
+                return ['ok' => false, 'message' => 'تعذّر قراءة إصدار النسخة الأحدث من GitHub. تحقّق من إعدادات المستودع والفرع والاتصال.'];
+            }
+            if (version_compare($remoteVer, $localVer, '<=')) {
+                return ['ok' => false, 'message' => 'النظام محدَّث بالفعل (الإصدار ' . $localVer . ').'];
+            }
         }
         if (!class_exists('ZipArchive')) {
             return ['ok' => false, 'message' => 'امتداد ZipArchive غير متوفر على السيرفر، ولا يمكن تطبيق التحديث تلقائياً.'];
@@ -126,11 +132,14 @@ class Updater
             self::deleteTree($tmpDir);
             @unlink($zipPath);
 
+            $toLabel = $remoteVer !== '' ? $remoteVer : 'الأحدث';
             return [
                 'ok' => true,
                 'from' => $localVer,
-                'to' => $remoteVer,
-                'message' => 'تم تحديث ملفات البرنامج من الإصدار ' . $localVer . ' إلى ' . $remoteVer . ' بنجاح.',
+                'to' => $toLabel,
+                'message' => $force
+                    ? 'تمت إعادة رفع ملفات البرنامج من الفرع ' . self::branch() . ' (الإصدار ' . $toLabel . ') بنجاح.'
+                    : 'تم تحديث ملفات البرنامج من الإصدار ' . $localVer . ' إلى ' . $toLabel . ' بنجاح.',
             ];
         } catch (Throwable $e) {
             self::deleteTree($tmpDir);
