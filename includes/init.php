@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 define('RASEED', true);
 define('BASE_PATH', dirname(__DIR__));
-define('RASEED_VERSION', '1.0.6');
+define('RASEED_VERSION', '1.0.7');
 
 // رابط جذر التطبيق (يدعم التشغيل من مجلد فرعي مثل domain.com/raseed)
 $scriptDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
@@ -86,6 +86,9 @@ set_exception_handler(function (Throwable $e) {
 // تحميل إعدادات النظام وضبط المنطقة الزمنية
 load_settings();
 date_default_timezone_set(setting('timezone', 'Asia/Riyadh'));
+
+// استعادة الجلسة من كوكي "تذكّرني" إن لزم (يُبقي الدخول دائماً على الجهاز/تطبيق PWA)
+try_remember_login();
 
 // بوابة الترقية: إذا كانت بنية القاعدة أقدم من الكود (بعد رفع نسخة جديدة)،
 // نمنع تشغيل بقية الصفحات ببنية ناقصة. المدير يُوجَّه لصفحة الترقية،

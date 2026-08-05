@@ -10,7 +10,7 @@
 defined('RASEED') || defined('RASEED_INSTALLER') || exit;
 
 /** إصدار بنية قاعدة البيانات المطلوب لهذا الكود */
-const RASEED_DB_VERSION = 5;
+const RASEED_DB_VERSION = 6;
 
 /**
  * سجل الترقيات: المفتاح = رقم الإصدار، القيمة = مصفوفة جمل SQL
@@ -89,6 +89,21 @@ function raseed_migrations(): array
             "ALTER TABLE transactions ADD COLUMN is_asset TINYINT(1) NOT NULL DEFAULT 0 AFTER amount",
             "ALTER TABLE transactions ADD COLUMN asset_name VARCHAR(150) DEFAULT NULL AFTER is_asset",
             "ALTER TABLE transactions ADD KEY idx_tx_asset (is_asset)",
+        ],
+
+        // الإصدار 6: تثبيت الدخول على الجهاز (رموز تذكّر دائمة) لدعم تطبيق الجوال PWA
+        6 => [
+            "CREATE TABLE IF NOT EXISTS auth_tokens (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                user_id INT UNSIGNED NOT NULL,
+                token_hash CHAR(64) NOT NULL,
+                expires_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_at_token (token_hash),
+                KEY idx_at_user (user_id),
+                CONSTRAINT fk_at_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
     ];
 }

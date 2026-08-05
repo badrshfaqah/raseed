@@ -52,6 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id']        = (int)$user['id'];
                     $_SESSION['regenerated_at'] = time();
                     q('UPDATE users SET last_login = NOW() WHERE id = ?', [$user['id']]);
+                    // تثبيت الدخول على الجهاز عند اختيار "إبقائي مسجّلاً" (مفيد لتطبيق الجوال)
+                    if (!empty($_POST['remember'])) {
+                        issue_remember_token((int)$user['id']);
+                    } else {
+                        clear_remember_token();
+                    }
                     redirect(APP_URL . 'dashboard.php');
                 }
             } else {
@@ -69,6 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>تسجيل الدخول - <?= e(setting('system_name', 'رصيد')) ?></title>
+<link rel="manifest" href="<?= APP_URL ?>manifest.php">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="<?= e(setting('system_name', 'رصيد')) ?>">
+<link rel="apple-touch-icon" href="<?= APP_URL ?>assets/img/apple-touch-icon.png">
+<link rel="icon" href="<?= APP_URL ?>assets/img/favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -96,9 +110,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" class="form-control form-control-lg" name="username"
                        value="<?= e($_POST['username'] ?? '') ?>" required autofocus dir="ltr">
             </div>
-            <div class="mb-4">
+            <div class="mb-3">
                 <label class="form-label">كلمة المرور</label>
                 <input type="password" class="form-control form-control-lg" name="password" required>
+            </div>
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" name="remember" id="remember" value="1"
+                       <?= isset($_POST['remember']) || $_SERVER['REQUEST_METHOD'] !== 'POST' ? 'checked' : '' ?>>
+                <label class="form-check-label" for="remember">
+                    إبقائي مسجّلاً على هذا الجهاز
+                </label>
             </div>
             <button type="submit" class="btn btn-primary btn-lg w-100">
                 <i class="bi bi-box-arrow-in-left"></i> تسجيل الدخول

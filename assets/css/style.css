@@ -299,7 +299,7 @@ button.badge-receipt:disabled { opacity: .6; cursor: progress; }
     .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0, 0, 0, .3); }
     .sidebar-backdrop.show { display: block; }
 
-    .page-body { padding: 1rem .85rem 3rem; }
+    .page-body { padding: 1rem .85rem calc(5rem + env(safe-area-inset-bottom)); }
     .stat-value { font-size: 1.25rem; }
 
     /* تحويل الجداول إلى بطاقات - بدون تمرير أفقي */
@@ -331,6 +331,47 @@ button.badge-receipt:disabled { opacity: .6; cursor: progress; }
         flex-shrink: 0;
     }
     .table-mobile tbody td.no-label::before { content: none; }
+
+    /* شريط التنقّل السفلي للجوال */
+    .mobile-bottom-nav {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 1030;
+        display: flex;
+        align-items: stretch;
+        background: #fff;
+        border-top: 1px solid var(--card-border, #e5e9f0);
+        box-shadow: 0 -4px 18px rgba(15, 23, 42, .08);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .mbn-item {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: .5rem .15rem;
+        font-size: .72rem;
+        font-weight: 600;
+        color: #64748b;
+        background: none;
+        border: 0;
+        text-decoration: none;
+        transition: color .15s ease;
+        min-height: 58px;
+    }
+    .mbn-item i { font-size: 1.35rem; line-height: 1; }
+    .mbn-item span { line-height: 1; }
+    .mbn-item:active { transform: scale(.95); }
+    .mbn-item.active { color: var(--primary, #0f766e); }
+    .mbn-item.active i { transform: translateY(-1px); }
+    /* تمييز لوني لأزرار الإضافة */
+    a.mbn-item[href*="type=expense"] i { color: #dc3545; }
+    a.mbn-item[href*="type=income"] i  { color: #198754; }
+    a.mbn-item.active[href*="type=expense"],
+    a.mbn-item.active[href*="type=income"] { color: var(--primary, #0f766e); }
 }
 
 @media print {

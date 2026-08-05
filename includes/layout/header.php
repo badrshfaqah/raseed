@@ -23,6 +23,14 @@ function nav_link(string $href, string $icon, string $label, string $current): s
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($pageTitle) ?> - <?= e(setting('system_name', 'رصيد')) ?></title>
+<link rel="manifest" href="<?= APP_URL ?>manifest.php">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="<?= e(setting('system_name', 'رصيد')) ?>">
+<link rel="apple-touch-icon" href="<?= APP_URL ?>assets/img/apple-touch-icon.png">
+<link rel="icon" href="<?= APP_URL ?>assets/img/favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
@@ -96,7 +104,7 @@ function nav_link(string $href, string $icon, string $label, string $current): s
     <!-- المحتوى -->
     <main class="content">
         <header class="topbar">
-            <button class="btn btn-light d-lg-none" id="sidebarToggle" aria-label="القائمة">
+            <button class="btn btn-light d-lg-none js-sidebar-toggle" id="sidebarToggle" aria-label="القائمة">
                 <i class="bi bi-list fs-4"></i>
             </button>
             <h1 class="page-title"><?= e($pageTitle) ?></h1>

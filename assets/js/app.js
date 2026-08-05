@@ -2,19 +2,27 @@
 (function () {
     'use strict';
 
+    /* تسجيل عامل الخدمة لتطبيق الجوال PWA */
+    if ('serviceWorker' in navigator) {
+        const swBase = document.body.getAttribute('data-app-url') || './';
+        navigator.serviceWorker.register(swBase + 'sw.js', { scope: swBase }).catch(function () { /* تجاهل */ });
+    }
+
     /* القائمة الجانبية على الجوال */
     const sidebar   = document.getElementById('sidebar');
     const backdrop  = document.getElementById('sidebarBackdrop');
-    const toggleBtn = document.getElementById('sidebarToggle');
 
     function closeSidebar() {
         sidebar && sidebar.classList.remove('open');
         backdrop && backdrop.classList.remove('show');
     }
 
-    toggleBtn && toggleBtn.addEventListener('click', function () {
-        sidebar.classList.toggle('open');
-        backdrop.classList.toggle('show');
+    // أي زر يحمل الصنف js-sidebar-toggle يفتح/يغلق القائمة (الزر العلوي وزر القائمة السفلي)
+    document.querySelectorAll('.js-sidebar-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            sidebar && sidebar.classList.toggle('open');
+            backdrop && backdrop.classList.toggle('show');
+        });
     });
     backdrop && backdrop.addEventListener('click', closeSidebar);
 
