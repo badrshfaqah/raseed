@@ -121,6 +121,9 @@ require BASE_PATH . '/includes/layout/header.php';
                         <i class="bi bi-pencil-square"></i> تحرير سريع
                     </a>
                 <?php endif; ?>
+                <a href="<?= APP_URL ?>print.php?<?= $exportParams ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-dark">
+                    <i class="bi bi-printer"></i> طباعة
+                </a>
                 <div class="btn-group ms-auto">
                     <a href="<?= APP_URL ?>export.php?format=xlsx&<?= $exportParams ?>" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-file-earmark-excel"></i> تصدير Excel

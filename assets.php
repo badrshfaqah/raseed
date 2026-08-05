@@ -65,9 +65,19 @@ require BASE_PATH . '/includes/layout/header.php';
                 <input type="text" class="form-control form-control-sm" name="search"
                        value="<?= e($_GET['search'] ?? '') ?>" placeholder="اسم الأصل، البند، الملاحظات...">
             </div>
+            <?php $assetPrintParams = http_build_query(array_filter([
+                'is_asset' => '1',
+                'from'     => $_GET['from'] ?? '',
+                'to'       => $_GET['to'] ?? '',
+                'tag_id'   => $_GET['tag_id'] ?? '',
+                'search'   => $_GET['search'] ?? '',
+            ])); ?>
             <div class="col-12 d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> تطبيق الفلترة</button>
                 <a href="<?= APP_URL ?>assets.php" class="btn btn-sm btn-outline-secondary">إعادة تعيين</a>
+                <a href="<?= APP_URL ?>print.php?<?= $assetPrintParams ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-dark ms-auto">
+                    <i class="bi bi-printer"></i> طباعة
+                </a>
             </div>
         </form>
     </div>
