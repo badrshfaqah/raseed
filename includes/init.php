@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 define('RASEED', true);
 define('BASE_PATH', dirname(__DIR__));
-define('RASEED_VERSION', '1.0.7');
+define('RASEED_VERSION', '1.0.8');
 
 // رابط جذر التطبيق (يدعم التشغيل من مجلد فرعي مثل domain.com/raseed)
 $scriptDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
