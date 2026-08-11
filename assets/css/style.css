@@ -332,6 +332,54 @@ button.badge-receipt:disabled { opacity: .6; cursor: progress; }
     }
     .table-mobile tbody td.no-label::before { content: none; }
 
+    /* جداول تبقى على هيئة جدول حقيقي في الجوال مع تمرير أفقي
+       (كشف الحساب وآخر العمليات) */
+    .table-grid thead { display: table-header-group; }
+    .table-grid tbody tr {
+        display: table-row;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        margin: 0;
+        padding: 0;
+    }
+    .table-grid thead th {
+        padding: .5rem .55rem;
+        font-size: .74rem;
+    }
+    .table-grid tbody td {
+        display: table-cell;
+        border: 0;
+        border-bottom: 1px solid #f0f2f6;
+        padding: .5rem .55rem;
+        font-size: .82rem;
+        white-space: nowrap;
+        text-align: start;
+    }
+    .table-grid tbody td::before { content: none; }
+    .table-grid tbody tr:last-child td { border-bottom: 0; }
+
+    /* خلايا نصية طويلة: يسمح لها بالالتفاف ضمن عرض محدود */
+    .table-grid .cell-wrap {
+        white-space: normal;
+        min-width: 120px;
+        max-width: 190px;
+    }
+
+    .table-grid .badge { font-size: .68rem; }
+    .table-grid .badge-receipt { font-size: .68rem; padding: .28rem .5rem; }
+    .table-grid .btn-sm { padding: .2rem .4rem; font-size: .72rem; }
+
+    /* تلميح التمرير الأفقي أعلى الجدول */
+    .table-scroll-hint {
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .74rem;
+        color: #8a92a6;
+        padding: .5rem .85rem .25rem;
+    }
+
     /* شريط التنقّل السفلي للجوال */
     .mobile-bottom-nav {
         position: fixed;

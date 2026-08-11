@@ -182,8 +182,11 @@ require BASE_PATH . '/includes/layout/header.php';
                 لا توجد عمليات مطابقة
             </div>
         <?php else: ?>
+            <div class="table-scroll-hint d-lg-none">
+                <i class="bi bi-arrow-left-right"></i> مرّر الجدول أفقياً لعرض بقية الأعمدة
+            </div>
             <div class="table-responsive">
-                <table class="table table-hover table-mobile align-middle">
+                <table class="table table-hover table-grid align-middle">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -208,7 +211,7 @@ require BASE_PATH . '/includes/layout/header.php';
                                     <span class="badge badge-<?= $t['type'] ?>"><?= type_label($t['type']) ?></span>
                                 </td>
                                 <td data-label="التصنيف"><?= e($t['category_name']) ?></td>
-                                <td data-label="البند">
+                                <td data-label="البند" class="cell-wrap">
                                     <?= e($t['item_name']) ?>
                                     <?php if (!empty($t['is_asset'])): ?>
                                         <span class="badge text-bg-warning" title="<?= e((string)($t['asset_name'] ?? '')) ?>">
@@ -226,7 +229,7 @@ require BASE_PATH . '/includes/layout/header.php';
                                 <td data-label="المبلغ" class="amount-<?= $t['type'] ?>">
                                     <?= ($t['type'] === 'expense' ? '-' : '+') . ' ' . format_amount($t['amount']) ?>
                                 </td>
-                                <td data-label="الملاحظات"><?= e($t['notes']) ?: '-' ?></td>
+                                <td data-label="الملاحظات" class="cell-wrap"><?= e($t['notes']) ?: '-' ?></td>
                                 <td data-label="المستخدم"><?= e($t['user_name']) ?></td>
                                 <td data-label="الإيصال">
                                     <?php
