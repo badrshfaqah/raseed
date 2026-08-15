@@ -28,6 +28,11 @@ if ($offset > 0) {
         ) sub", $bind)->fetchColumn();
 }
 
+// الرصيد السابق (المُرحّل من قبل بداية الفترة) عند تفعيل الخيار مع تاريخ «من»
+$prev = previous_balance($_GET);
+// أساس حركة الرصيد: الرصيد السابق + صافي عمليات الفترة قبل هذه الصفحة
+$runningBase = ($prev['show'] ? $prev['balance'] : 0.0) + $opening;
+
 $rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS user_name,
            ' . tx_tags_subquery() . ' AS tag_names
            ' . tx_base_query() . "
@@ -53,6 +58,7 @@ $exportParams = http_build_query(array_filter([
     'item_id'     => $_GET['item_id'] ?? '',
     'tag_id'      => $_GET['tag_id'] ?? '',
     'is_asset'    => !empty($_GET['is_asset']) ? '1' : '',
+    'show_prev'   => !empty($_GET['show_prev']) ? '1' : '',
     'search'      => $_GET['search'] ?? '',
 ]));
 
@@ -125,6 +131,15 @@ require BASE_PATH . '/includes/layout/header.php';
                     <label class="form-check-label small" for="assetFilter">الأصول فقط</label>
                 </div>
             </div>
+            <div class="col-6 col-md-2">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" name="show_prev" id="showPrev" value="1"
+                           <?= !empty($_GET['show_prev']) ? 'checked' : '' ?>>
+                    <label class="form-check-label small" for="showPrev" title="يعرض الرصيد المُرحّل قبل تاريخ (من) ليبدأ منه تسلسل حركة الرصيد">
+                        عرض الرصيد السابق
+                    </label>
+                </div>
+            </div>
             <div class="col-12 d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> تطبيق الفلترة</button>
                 <a href="<?= APP_URL ?>transactions.php" class="btn btn-sm btn-outline-secondary">إعادة تعيين</a>
@@ -182,6 +197,23 @@ require BASE_PATH . '/includes/layout/header.php';
     </div>
 </div>
 
+<?php if ($prev['show']): ?>
+    <div class="alert alert-secondary d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <span>
+            <i class="bi bi-arrow-bar-left"></i>
+            الرصيد السابق (المُرحّل قبل <?= e($prev['from']) ?>):
+        </span>
+        <strong class="<?= $prev['balance'] >= 0 ? 'text-success' : 'text-danger' ?>">
+            <?= format_amount($prev['balance']) ?>
+        </strong>
+    </div>
+<?php elseif (!empty($_GET['show_prev'])): ?>
+    <div class="alert alert-warning py-2 small mb-4">
+        <i class="bi bi-info-circle"></i>
+        لعرض الرصيد السابق، حدّد تاريخ «من» أولاً ثم طبّق الفلترة.
+    </div>
+<?php endif; ?>
+
 <!-- الجدول -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -216,7 +248,7 @@ require BASE_PATH . '/includes/layout/header.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $running = $opening; $seq = $offset; ?>
+                        <?php $running = $runningBase; $seq = $offset; ?>
                         <?php foreach ($rows as $t): ?>
                             <?php $seq++; $running += ($t['type'] === 'income' ? (float)$t['amount'] : -(float)$t['amount']); ?>
                             <tr>

@@ -22,9 +22,15 @@ $rows = q('SELECT t.id, t.trans_date, t.type, c.name AS category_name, i.name AS
 
 $headers = ['#', 'التاريخ', 'النوع', 'التصنيف', 'البند', 'التاق', 'المبلغ', 'حركة الرصيد', 'أصل', 'اسم الأصل', 'الملاحظات', 'المستخدم', 'وقت التسجيل'];
 
+$prev = previous_balance($_GET);
+
 $data = [];
-$running = 0.0;
+$running = $prev['show'] ? $prev['balance'] : 0.0;
 $seq = 0;
+// صف الرصيد السابق المُرحّل (عند تفعيل الخيار مع تاريخ «من»)
+if ($prev['show']) {
+    $data[] = ['', '', '', '', '', 'الرصيد السابق (قبل ' . $prev['from'] . ')', '', $running, '', '', '', '', ''];
+}
 foreach ($rows as $r) {
     $seq++;
     $running += ($r['type'] === 'income' ? (float)$r['amount'] : -(float)$r['amount']);

@@ -18,6 +18,7 @@ $rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS u
            ORDER BY t.trans_date ASC, t.id ASC", $bind)->fetchAll();
 
 $totals = tx_totals($whereSql, $bind);
+$prev   = previous_balance($_GET);
 
 // ملخّص الفلاتر المطبَّقة للعرض في الترويسة
 $typeLabels = ['income' => 'الإيرادات فقط', 'expense' => 'المصروفات فقط'];
@@ -120,7 +121,15 @@ $nonce    = csp_nonce();
             </tr>
         </thead>
         <tbody>
-            <?php $running = 0.0; $seq = 0; ?>
+            <?php $running = $prev['show'] ? $prev['balance'] : 0.0; $seq = 0; ?>
+            <?php if ($prev['show']): ?>
+                <tr style="background:#f8fafc;font-weight:700">
+                    <td>—</td>
+                    <td colspan="6">الرصيد السابق (المُرحّل قبل <?= e($prev['from']) ?>)</td>
+                    <td class="num">—</td>
+                    <td class="num" style="color:<?= $running >= 0 ? '#15803d' : '#b91c1c' ?>"><?= format_amount($running, false) ?></td>
+                </tr>
+            <?php endif; ?>
             <?php foreach ($rows as $t): ?>
                 <?php $seq++; $running += ($t['type'] === 'income' ? (float)$t['amount'] : -(float)$t['amount']); ?>
                 <tr>

@@ -337,6 +337,31 @@ function tx_totals(string $whereSql, array $bind): array
     ];
 }
 
+/**
+ * الرصيد السابق (المُرحّل) لكشف فترة محددة = صافي كل العمليات قبل تاريخ «من»
+ * مع احترام بقية الفلاتر (النوع، التصنيف، البند، التاق، الأصول، البحث) عدا نطاق التاريخ.
+ * يُفعَّل فقط عند طلب الخيار (show_prev) ووجود تاريخ «من» صحيح.
+ *
+ * @return array{show:bool, from:string, balance:float}
+ */
+function previous_balance(array $in): array
+{
+    $wantsPrev = !empty($in['show_prev']);
+    $fromValid = !empty($in['from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$in['from']);
+    if (!$wantsPrev || !$fromValid) {
+        return ['show' => false, 'from' => '', 'balance' => 0.0];
+    }
+    // نبني الفلاتر بدون نطاق التاريخ، ثم نقيّد بما قبل «من»
+    $prevIn = $in;
+    unset($prevIn['from'], $prevIn['to']);
+    [$where, $bind] = build_tx_filters($prevIn);
+    $where = $where === '' ? 'WHERE t.trans_date < ?' : $where . ' AND t.trans_date < ?';
+    $bind[] = (string)$in['from'];
+
+    $totals = tx_totals($where, $bind);
+    return ['show' => true, 'from' => (string)$in['from'], 'balance' => $totals['balance']];
+}
+
 /** ترجمة نوع العملية */
 function type_label(string $type): string
 {
