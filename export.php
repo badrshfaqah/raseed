@@ -18,12 +18,14 @@ $rows = q('SELECT t.id, t.trans_date, t.type, c.name AS category_name, i.name AS
                   t.amount, t.is_asset, t.asset_name, t.notes, u.name AS user_name, t.created_at
            ' . tx_base_query() . "
            $whereSql
-           ORDER BY t.trans_date DESC, t.id DESC", $bind)->fetchAll();
+           ORDER BY t.trans_date ASC, t.id ASC", $bind)->fetchAll();
 
-$headers = ['#', 'التاريخ', 'النوع', 'التصنيف', 'البند', 'التاق', 'المبلغ', 'أصل', 'اسم الأصل', 'الملاحظات', 'المستخدم', 'وقت التسجيل'];
+$headers = ['#', 'التاريخ', 'النوع', 'التصنيف', 'البند', 'التاق', 'المبلغ', 'حركة الرصيد', 'أصل', 'اسم الأصل', 'الملاحظات', 'المستخدم', 'وقت التسجيل'];
 
 $data = [];
+$running = 0.0;
 foreach ($rows as $r) {
+    $running += ($r['type'] === 'income' ? (float)$r['amount'] : -(float)$r['amount']);
     $data[] = [
         (int)$r['id'],
         $r['trans_date'],
@@ -32,6 +34,7 @@ foreach ($rows as $r) {
         $r['item_name'],
         (string)$r['tag_names'],
         (float)$r['amount'],
+        $running,
         (int)$r['is_asset'] === 1 ? 'نعم' : '',
         (string)$r['asset_name'],
         (string)$r['notes'],
@@ -42,9 +45,9 @@ foreach ($rows as $r) {
 
 // صف الإجماليات في نهاية الملف (التسمية تحت عمود التاق، والقيمة تحت المبلغ)
 $totals = tx_totals($whereSql, $bind);
-$data[] = ['', '', '', '', '', 'إجمالي الإيرادات', $totals['income'], '', '', '', '', ''];
-$data[] = ['', '', '', '', '', 'إجمالي المصروفات', $totals['expense'], '', '', '', '', ''];
-$data[] = ['', '', '', '', '', 'الرصيد', $totals['balance'], '', '', '', '', ''];
+$data[] = ['', '', '', '', '', 'إجمالي الإيرادات', $totals['income'], '', '', '', '', '', ''];
+$data[] = ['', '', '', '', '', 'إجمالي المصروفات', $totals['expense'], '', '', '', '', '', ''];
+$data[] = ['', '', '', '', '', 'الرصيد', $totals['balance'], '', '', '', '', '', ''];
 
 $typeSuffix = match ($_GET['type'] ?? '') {
     'income'  => '-الإيرادات',

@@ -15,7 +15,7 @@ $rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS u
            ' . tx_tags_subquery() . ' AS tag_names
            ' . tx_base_query() . "
            $whereSql
-           ORDER BY t.trans_date DESC, t.id DESC", $bind)->fetchAll();
+           ORDER BY t.trans_date ASC, t.id ASC", $bind)->fetchAll();
 
 $totals = tx_totals($whereSql, $bind);
 
@@ -116,10 +116,13 @@ $nonce    = csp_nonce();
                 <th>التاق</th>
                 <th>الملاحظات</th>
                 <th>المبلغ</th>
+                <th>حركة الرصيد</th>
             </tr>
         </thead>
         <tbody>
+            <?php $running = 0.0; ?>
             <?php foreach ($rows as $t): ?>
+                <?php $running += ($t['type'] === 'income' ? (float)$t['amount'] : -(float)$t['amount']); ?>
                 <tr>
                     <td><?= (int)$t['id'] ?></td>
                     <td><?= e(format_date($t['trans_date'])) ?></td>
@@ -140,6 +143,7 @@ $nonce    = csp_nonce();
                     </td>
                     <td><?= e($t['notes']) ?: '-' ?></td>
                     <td class="num"><?= ($t['type'] === 'expense' ? '-' : '+') . ' ' . format_amount($t['amount'], false) ?></td>
+                    <td class="num" style="font-weight:700;color:<?= $running >= 0 ? '#15803d' : '#b91c1c' ?>"><?= format_amount($running, false) ?></td>
                 </tr>
             <?php endforeach; ?>
         </tbody>

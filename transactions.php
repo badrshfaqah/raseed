@@ -8,19 +8,31 @@ require_login();
 [$whereSql, $bind] = build_tx_filters($_GET);
 $totals = tx_totals($whereSql, $bind);
 
-// ترقيم الصفحات
+// ترقيم الصفحات — العرض من الأقدم للأحدث (الأقدم فوق والأحدث أسفل)
 $perPage = 50;
-$page    = max(1, (int)($_GET['page'] ?? 1));
 $count   = (int)q('SELECT COUNT(*) ' . tx_base_query() . " $whereSql", $bind)->fetchColumn();
 $pages   = max(1, (int)ceil($count / $perPage));
-$page    = min($page, $pages);
+// افتراضياً نفتح على آخر صفحة ليظهر الأحدث في الأسفل، ما لم تُطلب صفحة محددة
+$page    = isset($_GET['page']) ? min(max(1, (int)$_GET['page']), $pages) : $pages;
 $offset  = ($page - 1) * $perPage;
+
+// الرصيد الافتتاحي لهذه الصفحة = صافي العمليات الأقدم التي تسبقها زمنياً (لحساب حركة الرصيد التراكمية)
+$opening = 0.0;
+if ($offset > 0) {
+    $opening = (float) q(
+        'SELECT COALESCE(SUM(d), 0) FROM (
+            SELECT CASE WHEN t.type = \'income\' THEN t.amount ELSE -t.amount END AS d
+            ' . tx_base_query() . " $whereSql
+            ORDER BY t.trans_date ASC, t.id ASC
+            LIMIT $offset
+        ) sub", $bind)->fetchColumn();
+}
 
 $rows = q('SELECT t.*, c.name AS category_name, i.name AS item_name, u.name AS user_name,
            ' . tx_tags_subquery() . ' AS tag_names
            ' . tx_base_query() . "
            $whereSql
-           ORDER BY t.trans_date DESC, t.id DESC
+           ORDER BY t.trans_date ASC, t.id ASC
            LIMIT $perPage OFFSET $offset", $bind)->fetchAll();
 
 $categories = q('SELECT id, name FROM categories ORDER BY name')->fetchAll();
@@ -196,6 +208,7 @@ require BASE_PATH . '/includes/layout/header.php';
                             <th>البند</th>
                             <th>التاق</th>
                             <th>المبلغ</th>
+                            <th>حركة الرصيد</th>
                             <th>الملاحظات</th>
                             <th>المستخدم</th>
                             <th>الإيصال</th>
@@ -203,7 +216,9 @@ require BASE_PATH . '/includes/layout/header.php';
                         </tr>
                     </thead>
                     <tbody>
+                        <?php $running = $opening; ?>
                         <?php foreach ($rows as $t): ?>
+                            <?php $running += ($t['type'] === 'income' ? (float)$t['amount'] : -(float)$t['amount']); ?>
                             <tr>
                                 <td data-label="#"><?= $t['id'] ?></td>
                                 <td data-label="التاريخ"><?= format_date($t['trans_date']) ?></td>
@@ -228,6 +243,9 @@ require BASE_PATH . '/includes/layout/header.php';
                                 </td>
                                 <td data-label="المبلغ" class="amount-<?= $t['type'] ?>">
                                     <?= ($t['type'] === 'expense' ? '-' : '+') . ' ' . format_amount($t['amount']) ?>
+                                </td>
+                                <td data-label="حركة الرصيد" class="fw-bold <?= $running >= 0 ? 'text-success' : 'text-danger' ?>">
+                                    <?= format_amount($running) ?>
                                 </td>
                                 <td data-label="الملاحظات" class="cell-wrap"><?= e($t['notes']) ?: '-' ?></td>
                                 <td data-label="المستخدم"><?= e($t['user_name']) ?></td>
