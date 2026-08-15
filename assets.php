@@ -117,8 +117,11 @@ require BASE_PATH . '/includes/layout/header.php';
                 لا توجد أصول بعد. عند إضافة مصروف، فعّل خيار «تسجيل كأصل» ليظهر هنا.
             </div>
         <?php else: ?>
+            <div class="table-scroll-hint d-lg-none">
+                <i class="bi bi-arrow-left-right"></i> مرّر الجدول أفقياً لعرض بقية الأعمدة
+            </div>
             <div class="table-responsive">
-                <table class="table table-hover table-mobile align-middle">
+                <table class="table table-hover table-grid align-middle">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -138,11 +141,11 @@ require BASE_PATH . '/includes/layout/header.php';
                             <tr>
                                 <td data-label="#"><?= $t['id'] ?></td>
                                 <td data-label="التاريخ"><?= format_date($t['trans_date']) ?></td>
-                                <td data-label="اسم الأصل" class="fw-bold">
+                                <td data-label="اسم الأصل" class="fw-bold cell-wrap">
                                     <?= e($t['asset_name'] ?: '—') ?>
                                 </td>
                                 <td data-label="التصنيف"><?= e($t['category_name']) ?></td>
-                                <td data-label="البند"><?= e($t['item_name']) ?></td>
+                                <td data-label="البند" class="cell-wrap"><?= e($t['item_name']) ?></td>
                                 <td data-label="التاق">
                                     <?php if (!empty($t['tag_names'])): ?>
                                         <?php foreach (explode('، ', $t['tag_names']) as $tgName): ?>
@@ -151,7 +154,7 @@ require BASE_PATH . '/includes/layout/header.php';
                                     <?php else: ?>-<?php endif; ?>
                                 </td>
                                 <td data-label="القيمة" class="amount-expense"><?= format_amount($t['amount']) ?></td>
-                                <td data-label="الملاحظات"><?= e($t['notes']) ?: '-' ?></td>
+                                <td data-label="الملاحظات" class="cell-wrap"><?= e($t['notes']) ?: '-' ?></td>
                                 <td data-label="المستخدم"><?= e($t['user_name']) ?></td>
                                 <?php if (can_edit()): ?>
                                     <td data-label="إجراءات" class="text-center">
