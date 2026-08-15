@@ -202,52 +202,43 @@ require BASE_PATH . '/includes/layout/header.php';
                     <thead>
                         <tr>
                             <th>#</th>
+                            <?php if (can_edit()): ?><th class="text-center">الإجراء</th><?php endif; ?>
+                            <th>المستخدم</th>
+                            <th><i class="bi bi-receipt"></i> الإيصال</th>
                             <th>التاريخ</th>
                             <th>النوع</th>
                             <th>التصنيف</th>
                             <th>البند</th>
                             <th>التاق</th>
+                            <th>الملاحظات</th>
                             <th>المبلغ</th>
                             <th>حركة الرصيد</th>
-                            <th>الملاحظات</th>
-                            <th>المستخدم</th>
-                            <th>الإيصال</th>
-                            <?php if (can_edit()): ?><th class="text-center">إجراءات</th><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $running = $opening; ?>
+                        <?php $running = $opening; $seq = $offset; ?>
                         <?php foreach ($rows as $t): ?>
-                            <?php $running += ($t['type'] === 'income' ? (float)$t['amount'] : -(float)$t['amount']); ?>
+                            <?php $seq++; $running += ($t['type'] === 'income' ? (float)$t['amount'] : -(float)$t['amount']); ?>
                             <tr>
-                                <td data-label="#"><?= $t['id'] ?></td>
-                                <td data-label="التاريخ"><?= format_date($t['trans_date']) ?></td>
-                                <td data-label="النوع">
-                                    <span class="badge badge-<?= $t['type'] ?>"><?= type_label($t['type']) ?></span>
-                                </td>
-                                <td data-label="التصنيف"><?= e($t['category_name']) ?></td>
-                                <td data-label="البند" class="cell-wrap">
-                                    <?= e($t['item_name']) ?>
-                                    <?php if (!empty($t['is_asset'])): ?>
-                                        <span class="badge text-bg-warning" title="<?= e((string)($t['asset_name'] ?? '')) ?>">
-                                            <i class="bi bi-box-seam"></i> أصل<?= !empty($t['asset_name']) ? ': ' . e($t['asset_name']) : '' ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td data-label="التاق">
-                                    <?php if (!empty($t['tag_names'])): ?>
-                                        <?php foreach (explode('، ', $t['tag_names']) as $tgName): ?>
-                                            <span class="badge text-bg-light border mb-1"><?= e($tgName) ?></span>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>-<?php endif; ?>
-                                </td>
-                                <td data-label="المبلغ" class="amount-<?= $t['type'] ?>">
-                                    <?= ($t['type'] === 'expense' ? '-' : '+') . ' ' . format_amount($t['amount']) ?>
-                                </td>
-                                <td data-label="حركة الرصيد" class="fw-bold <?= $running >= 0 ? 'text-success' : 'text-danger' ?>">
-                                    <?= format_amount($running) ?>
-                                </td>
-                                <td data-label="الملاحظات" class="cell-wrap"><?= e($t['notes']) ?: '-' ?></td>
+                                <td data-label="#" class="text-muted"><?= $seq ?></td>
+                                <?php if (can_edit()): ?>
+                                    <td data-label="الإجراء" class="text-center">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="<?= APP_URL ?>transaction_edit.php?id=<?= $t['id'] ?>"
+                                               class="btn btn-sm btn-outline-primary" title="تعديل">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form method="post" action="<?= APP_URL ?>transaction_delete.php"
+                                                  data-confirm="هل أنت متأكد من حذف هذه العملية؟ لا يمكن التراجع.">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="id" value="<?= $t['id'] ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                <?php endif; ?>
                                 <td data-label="المستخدم"><?= e($t['user_name']) ?></td>
                                 <td data-label="الإيصال">
                                     <?php
@@ -269,24 +260,33 @@ require BASE_PATH . '/includes/layout/header.php';
                                         </span>
                                     <?php endif; ?>
                                 </td>
-                                <?php if (can_edit()): ?>
-                                    <td data-label="إجراءات" class="text-center">
-                                        <div class="d-inline-flex gap-1">
-                                            <a href="<?= APP_URL ?>transaction_edit.php?id=<?= $t['id'] ?>"
-                                               class="btn btn-sm btn-outline-primary" title="تعديل">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <form method="post" action="<?= APP_URL ?>transaction_delete.php"
-                                                  data-confirm="هل أنت متأكد من حذف هذه العملية؟ لا يمكن التراجع.">
-                                                <?= csrf_field() ?>
-                                                <input type="hidden" name="id" value="<?= $t['id'] ?>">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                <?php endif; ?>
+                                <td data-label="التاريخ"><?= format_date($t['trans_date']) ?></td>
+                                <td data-label="النوع">
+                                    <span class="badge badge-<?= $t['type'] ?>"><?= type_label($t['type']) ?></span>
+                                </td>
+                                <td data-label="التصنيف"><?= e($t['category_name']) ?></td>
+                                <td data-label="البند" class="cell-wrap">
+                                    <?= e($t['item_name']) ?>
+                                    <?php if (!empty($t['is_asset'])): ?>
+                                        <span class="badge text-bg-warning" title="<?= e((string)($t['asset_name'] ?? '')) ?>">
+                                            <i class="bi bi-box-seam"></i> أصل<?= !empty($t['asset_name']) ? ': ' . e($t['asset_name']) : '' ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td data-label="التاق">
+                                    <?php if (!empty($t['tag_names'])): ?>
+                                        <?php foreach (explode('، ', $t['tag_names']) as $tgName): ?>
+                                            <span class="badge text-bg-light border mb-1"><?= e($tgName) ?></span>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>-<?php endif; ?>
+                                </td>
+                                <td data-label="الملاحظات" class="cell-wrap"><?= e($t['notes']) ?: '-' ?></td>
+                                <td data-label="المبلغ" class="amount-<?= $t['type'] ?>">
+                                    <?= ($t['type'] === 'expense' ? '-' : '+') . ' ' . format_amount($t['amount']) ?>
+                                </td>
+                                <td data-label="حركة الرصيد" class="fw-bold <?= $running >= 0 ? 'text-success' : 'text-danger' ?>">
+                                    <?= format_amount($running) ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

@@ -120,11 +120,11 @@ $nonce    = csp_nonce();
             </tr>
         </thead>
         <tbody>
-            <?php $running = 0.0; ?>
+            <?php $running = 0.0; $seq = 0; ?>
             <?php foreach ($rows as $t): ?>
-                <?php $running += ($t['type'] === 'income' ? (float)$t['amount'] : -(float)$t['amount']); ?>
+                <?php $seq++; $running += ($t['type'] === 'income' ? (float)$t['amount'] : -(float)$t['amount']); ?>
                 <tr>
-                    <td><?= (int)$t['id'] ?></td>
+                    <td><?= $seq ?></td>
                     <td><?= e(format_date($t['trans_date'])) ?></td>
                     <td class="type-<?= $t['type'] ?>"><?= type_label($t['type']) ?></td>
                     <td><?= e($t['category_name']) ?></td>

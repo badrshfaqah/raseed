@@ -24,10 +24,12 @@ $headers = ['#', 'التاريخ', 'النوع', 'التصنيف', 'البند',
 
 $data = [];
 $running = 0.0;
+$seq = 0;
 foreach ($rows as $r) {
+    $seq++;
     $running += ($r['type'] === 'income' ? (float)$r['amount'] : -(float)$r['amount']);
     $data[] = [
-        (int)$r['id'],
+        $seq,
         $r['trans_date'],
         type_label($r['type']),
         $r['category_name'],
