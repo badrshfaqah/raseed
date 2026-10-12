@@ -48,11 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(APP_URL . 'tags.php');
 }
 
-// كل تاق مع إجمالي المبالغ المرتبطة به من إيرادات ومصروفات وعدد عملياته
+// كل تاق مع إجمالي المبالغ المرتبطة به من إيرادات ومصروفات ومشاريع وعدد عملياته
 $tags = q("SELECT tg.*,
               COALESCE(SUM(CASE WHEN t.type = 'income'  THEN t.amount END), 0) AS income,
               COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount END), 0) AS expense,
-              COUNT(t.id) AS tx_count
+              COUNT(t.id) AS tx_count,
+              COALESCE((SELECT SUM(p.value) FROM tag_projects p
+                        WHERE p.tag_id = tg.id AND p.status = 1), 0) AS projects_total
            FROM tags tg
            LEFT JOIN transaction_tags jt ON jt.tag_id = tg.id
            LEFT JOIN transactions t      ON t.id = jt.transaction_id
@@ -81,6 +83,7 @@ require BASE_PATH . '/includes/layout/header.php';
                 <p class="text-muted small mt-3 mb-0">
                     استخدم التاق لكل شخص أو جهة تتعامل معها بالنيابة: المبالغ <strong>الواردة له</strong> (تُسجَّل إيراداً بتاقه)
                     مقابل ما تدفعه <strong>نيابةً عنه</strong> (يُسجَّل مصروفاً بتاقه)، فيظهر لك <strong>المتبقّي له أو عليه</strong> تلقائياً.
+                    وبالدخول على حساب التاق يمكنك إضافة <strong>مشاريع خاصة</strong> (بقيمة وتواريخ) تُحتسب ضمن مستحقاته دون أن تدخل الحسابات العامة.
                 </p>
             </div>
         </div>
@@ -102,6 +105,7 @@ require BASE_PATH . '/includes/layout/header.php';
                                 <tr>
                                     <th>التاق (الشخص/الجهة)</th>
                                     <th>الوارد له</th>
+                                    <th>المشاريع</th>
                                     <th>المصروف نيابةً عنه</th>
                                     <th>المتبقّي</th>
                                     <th>العمليات</th>
@@ -111,13 +115,18 @@ require BASE_PATH . '/includes/layout/header.php';
                             </thead>
                             <tbody>
                                 <?php foreach ($tags as $t):
-                                    $remaining = (float)$t['income'] - (float)$t['expense'];
+                                    $remaining = (float)$t['income'] + (float)$t['projects_total'] - (float)$t['expense'];
                                 ?>
                                     <tr>
                                         <td data-label="التاق" class="fw-bold">
-                                            <a href="<?= APP_URL ?>transactions.php?tag_id=<?= $t['id'] ?>"><?= e($t['name']) ?></a>
+                                            <a href="<?= APP_URL ?>tag_account.php?id=<?= $t['id'] ?>"><?= e($t['name']) ?></a>
                                         </td>
                                         <td data-label="الوارد له" class="amount-income"><?= format_amount($t['income']) ?></td>
+                                        <td data-label="المشاريع">
+                                            <?php if ((float)$t['projects_total'] > 0): ?>
+                                                <span class="amount-income"><?= format_amount($t['projects_total']) ?></span>
+                                            <?php else: ?>-<?php endif; ?>
+                                        </td>
                                         <td data-label="المصروف نيابةً عنه" class="amount-expense"><?= format_amount($t['expense']) ?></td>
                                         <td data-label="المتبقّي">
                                             <?php if (abs($remaining) < 0.005): ?>
@@ -136,6 +145,10 @@ require BASE_PATH . '/includes/layout/header.php';
                                         </td>
                                         <td data-label="إجراءات" class="text-center">
                                             <div class="d-inline-flex gap-1">
+                                                <a href="<?= APP_URL ?>tag_account.php?id=<?= $t['id'] ?>"
+                                                   class="btn btn-sm btn-outline-success" title="الحساب والمشاريع">
+                                                    <i class="bi bi-kanban"></i>
+                                                </a>
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
                                                         data-bs-toggle="modal" data-bs-target="#editModal"
                                                         data-id="<?= $t['id'] ?>" data-name="<?= e($t['name']) ?>" title="تعديل">
